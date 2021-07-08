@@ -1,0 +1,56 @@
+version: '3.5'
+networks:
+  ethereum-scaffold:
+    name: &network-common ethereum-scaffold
+
+services:
+  chain0-scaffold:
+    container_name: ethereum-chain0-scaffold
+    build:
+      context: ./Dockerfiles/geth-scaffold
+      args:
+        - GETH_VERSION=${GETH_VERSION}
+        - CHAINID=2018
+        - NETWORKID=${NETWORK_ID0}
+    volumes:
+      - backup-chain0:/root/.ethereum
+      - ./dag/chain0:/root/.ethash
+    ports:
+      - 8545:8545
+      - 8546:8546
+    networks:
+      - *network-common
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "--proxy", "off", "http://localhost:8545" ]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+  chain1-scaffold:
+    container_name: ethereum-chain1-scaffold
+    build:
+      context: ./Dockerfiles/geth-scaffold
+      args:
+        - GETH_VERSION=${GETH_VERSION}
+        - CHAINID=2019
+        - NETWORKID=${NETWORK_ID1}
+    volumes:
+      - backup-chain1:/root/.ethereum
+      - ./dag/chain1:/root/.ethash
+    ports:
+      - 8645:8545
+      - 8646:8546
+    networks:
+      - *network-common
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "--proxy", "off", "http://localhost:8545" ]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+
+volumes:
+  backup-chain0:
+    name: ethereum-chain0-scaffold
+  backup-chain1:
+    name: ethereum-chain1-scaffold
