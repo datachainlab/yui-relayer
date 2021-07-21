@@ -4,6 +4,18 @@ const mnemonic =
 
 module.exports = {
   networks: {
+    development: {
+      network_id: "*",
+      provider: () =>
+        new HDWalletProvider({
+          mnemonic: {
+            phrase: mnemonic,
+          },
+          providerOrUrl: "http://127.0.0.1:8545",
+          addressIndex: 0,
+          numberOfAddresses: 10,
+        }),
+    },
     chain0: {
       network_id: "*",
       provider: () =>

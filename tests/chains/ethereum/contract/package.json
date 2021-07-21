@@ -2,17 +2,19 @@
   "name": "contract",
   "version": "1.0.0",
   "scripts": {
-    "migrate": "run-s clean copy:ibc migrate:chainz",
-    "migrate:chainz": "run-p  migrate:chain0 migrate:chain1",
+    "migrate": "run-s migrate:chainz",
+    "migrate:chainz": "run-p migrate:chain0 migrate:chain1",
     "migrate:chain0": "truffle migrate --reset --network=chain0",
     "migrate:chain1": "truffle migrate --reset --network=chain1",
+    "migrate:ganache": "truffle migrate --reset --network=development",
+    "compile": "run-s compile:ibc copy:ibc",
     "compile:ibc": "cd node_modules/@hyperledger-labs/yui-ibc-solidity && truffle compile",
     "copy:ibc": "cpx \"node_modules/@hyperledger-labs/yui-ibc-solidity/build/contracts/*.json\" build/contracts -v",
-    "postinstall": "run-s compile:ibc",
+    "postinstall": "npm run compile",
     "clean": "rimraf build"
   },
   "dependencies": {
-    "@hyperledger-labs/yui-ibc-solidity": "hyperledger-labs/yui-ibc-solidity.git#957e21e7bfcc",
+    "@hyperledger-labs/yui-ibc-solidity": "hyperledger-labs/yui-ibc-solidity.git#33c02913bc54",
     "@truffle/hdwallet-provider": "1.4.1",
     "truffle": "^5.3.14",
     "truffle-contract-size": "^2.0.1"

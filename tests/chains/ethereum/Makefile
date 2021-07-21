@@ -3,7 +3,8 @@ include ../../docker.mk
 SCRIPT_DIR ?= $(CURDIR)/scripts
 DAG_DIR ?= $(CURDIR)/dag
 
-GETH_VERSION ?= v1.10.4
+GANACHE_VERSION ?= v6.12.2
+GETH_VERSION    ?= v1.10.4
 
 NETWORK_ID0 ?= 12018
 NETWORK_ID1 ?= 12019
@@ -56,3 +57,12 @@ snapshot:
 .PHONY: docker-images
 docker-images:
 	$(SCRIPT_DIR)/docker/buildImages.sh $(DOCKER_REPO) $(DOCKER_TAG) $(GETH_VERSION) $(NETWORK_ID0) $(NETWORK_ID1)
+
+.PHONY: ganache
+ganache:
+	docker run -it --rm --name ganache \
+	-e NODE_OPTIONS="--max-old-space-size=4096" \
+	-p 8545:8545 \
+	trufflesuite/ganache-cli:$(GANACHE_VERSION) \
+	--networkId 5777 --defaultBalanceEther 10000 \
+	--mnemonic "math razor capable expose worth grape metal sunset metal sudden usage scheme"
