@@ -247,3 +247,33 @@ jobs:
           make network
           make test
           make network-down
+
+  eth2xxx-test:
+    name: eth2xxx-test
+    runs-on: ubuntu-20.04
+    needs:
+      - relayer-build
+      - ethereum-build
+    steps:
+      - uses: actions/checkout@v2
+      - name: Restore relayer binary cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.CACHE_BIN_RELAYER_PATH }}
+          key: ${{ runner.os }}-${{ env.CACHE_BIN_RELAYER_KEY }}-${{ github.sha }}
+      - name: Restore Ethereum docker image cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ env.CACHE_DOCKER_ETHEREUM_DIR }}
+          key: ${{ runner.os }}-${{ env.CACHE_DOCKER_ETHEREUM_KEY }}-${{ github.sha }}
+      - name: Load Ethereum docker image
+        working-directory: ./tests/scripts
+        run: |
+          ./load_docker_images $CACHE_DOCKER_ETHEREUM_DIR \
+             ethereum-chain0:latest
+      - name: Run Test
+        working-directory: ./tests/cases/eth2xxx
+        run: |
+          make network
+          make test
+          make network-down

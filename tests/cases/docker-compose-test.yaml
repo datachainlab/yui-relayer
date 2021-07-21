@@ -150,3 +150,17 @@ services:
       - 18051:18051
     networks:
       - *network-common
+
+# Ethereum - geth
+  ethereum-chain0:
+    container_name: ethereum-chain0
+    image: ethereum-chain0:${TAG}
+    ports:
+      - 8545:8545
+      - 8546:8546
+  ethereum-chain1:
+    container_name: ethereum-chain1
+    image: ethereum-chain1:${TAG}
+    ports:
+      - 8645:8545
+      - 8646:8546

@@ -1,22 +1,34 @@
 include ../../docker.mk
 
 SCRIPT_DIR ?= $(CURDIR)/scripts
-DAG_DIR ?= $(CURDIR)/dag
 
-GANACHE_VERSION ?= v6.12.2
 GETH_VERSION    ?= v1.10.4
+GANACHE_VERSION ?= v6.12.2
 
 NETWORK_ID0 ?= 12018
 NETWORK_ID1 ?= 12019
 
+export GETH_VERSION
+export NETWORK_ID0
+export NETWORK_ID1
+
 .PHONY: clean
 clean:
-	rm -rf ./backup
-	rm -rf ./dag
+	rm -rf $(CURDIR)/backup
+	rm -rf $(CURDIR)/dag
+
+.PHONY: snapshot
+snapshot:
+	make up-scaffold
+	make deploy-contract
+	make pause-scaffold
+	make backup
+	make save-contract-address
+	make down-scaffold
 
 .PHONY: dag
 dag:
-	$(SCRIPT_DIR)/create_dag.sh $(DAG_DIR) $(GETH_VERSION)
+	$(SCRIPT_DIR)/create_dag.sh $(CURDIR)/dag
 
 .PHONY: deploy-contract
 deploy-contract:
@@ -24,8 +36,11 @@ deploy-contract:
 
 .PHONY: up-scaffold
 up-scaffold:
-	GETH_VERSION=$(GETH_VERSION) NETWORK_ID0=$(NETWORK_ID0) NETWORK_ID1=$(NETWORK_ID1) \
 	$(DOCKER_COMPOSE) up --build -d
+
+.PHONY: down-scaffold
+down-scaffold:
+	$(DOCKER_COMPOSE) down --volumes --remove-orphans
 
 .PHONY: pause-scaffold
 pause-scaffold:
@@ -35,28 +50,20 @@ pause-scaffold:
 unpause-scaffold:
 	$(DOCKER_COMPOSE) unpause
 
-.PHONY: down-scaffold
-down-scaffold:
-	$(DOCKER_COMPOSE) down --volumes --remove-orphans
+.PHONY: save-contract-address
+save-contract-address:
+	$(SCRIPT_DIR)/docker/saveContractAddress.sh $(NETWORK_ID0)
+	$(SCRIPT_DIR)/docker/saveContractAddress.sh $(NETWORK_ID1)
 
 .PHONY: backup
 backup:
-	rm -rf $(CURDIR)/backup
-	$(SCRIPT_DIR)/docker/backupVolume.sh
-
-.PHONY: snapshot
-snapshot:
-	make dag
-	make up-scaffold
-	make deploy-contract
-	make pause-scaffold
-	make backup
-	make unpause-scaffold
-	make down-scaffold
+	$(SCRIPT_DIR)/docker/backupVolume.sh ethereum-chain0-scaffold $(NETWORK_ID0)
+	$(SCRIPT_DIR)/docker/backupVolume.sh ethereum-chain1-scaffold $(NETWORK_ID1)
 
 .PHONY: docker-images
 docker-images:
-	$(SCRIPT_DIR)/docker/buildImages.sh $(DOCKER_REPO) $(DOCKER_TAG) $(GETH_VERSION) $(NETWORK_ID0) $(NETWORK_ID1)
+	$(SCRIPT_DIR)/docker/buildImages.sh  $(GETH_VERSION) $(DOCKER_REPO) $(DOCKER_TAG) ethereum-chain0 $(NETWORK_ID0)
+	$(SCRIPT_DIR)/docker/buildImages.sh  $(GETH_VERSION) $(DOCKER_REPO) $(DOCKER_TAG) ethereum-chain1 $(NETWORK_ID1)
 
 .PHONY: ganache
 ganache:

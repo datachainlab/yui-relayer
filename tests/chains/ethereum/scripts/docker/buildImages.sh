@@ -4,22 +4,15 @@ set -eu
 
 DOCKER_BUILD="docker build --rm --no-cache --pull"
 
-DOCKER_REPO=$1
-DOCKER_TAG=$2
-GETH_VERSION=$3
-NETWORK_ID0=$4
-NETWORK_ID1=$5
+GETH_VERSION=$1
+DOCKER_REPO=$2
+DOCKER_TAG=$3
+DOCKER_IMAGE=$4
+NETWORK_ID=$5
 
-## chain0
 ${DOCKER_BUILD} -f ./Dockerfiles/geth/Dockerfile \
     --build-arg GETH_VERSION=${GETH_VERSION} \
-    --build-arg NETWORKID=${NETWORK_ID0} \
-    --build-arg LEDGER_BACKUP_PATH=backup/chain0/ledger \
-		--tag ${DOCKER_REPO}ethereum-chain0:${DOCKER_TAG} .
-
-## chain1
-${DOCKER_BUILD} -f ./Dockerfiles/geth/Dockerfile \
-    --build-arg GETH_VERSION=${GETH_VERSION} \
-    --build-arg NETWORKID=${NETWORK_ID1} \
-    --build-arg LEDGER_BACKUP_PATH=backup/chain1/ledger \
-		--tag ${DOCKER_REPO}ethereum-chain1:${DOCKER_TAG} .
+    --build-arg NETWORKID=${NETWORK_ID} \
+    --build-arg LEDGER_BACKUP_PATH=backup/${NETWORK_ID}/ledger \
+    --build-arg CONTRACT_ADDRESS_DIR=contract/build/addresses/${NETWORK_ID} \
+		--tag ${DOCKER_REPO}${DOCKER_IMAGE}:${DOCKER_TAG} .

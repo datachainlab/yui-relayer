@@ -9,6 +9,7 @@ ADD geth.password /root/geth.password
 ADD genesis.json  /root/genesis.json
 ADD geth-config.toml /root/geth-config.toml
 ADD privatekey  /root/privatekey
+ADD run.sh /run.sh
 
 RUN sed -i "s#\"chainId\": 0#\"chainId\": $CHAINID#g" /root/genesis.json
 RUN sed -i "s#NetworkId = 0#NetworkId = $NETWORKID#g" /root/geth-config.toml
@@ -19,5 +20,4 @@ RUN /usr/local/bin/geth account import /root/privatekey --password /root/geth.pa
 
 EXPOSE 8545 8546 30303
 
-ENTRYPOINT ["geth"]
-CMD ["--config", "/root/geth-config.toml", "--mine", "--miner.threads", "1"]
+ENTRYPOINT ["/run.sh"]

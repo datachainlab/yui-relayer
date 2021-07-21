@@ -3,7 +3,6 @@
 set -eu
 
 DAG_DIR=$1
-GETH_VERSION=$2
 
 if [ -d $DAG_DIR ]; then
   if [ "$(ls -A $DAG_DIR)" ]; then

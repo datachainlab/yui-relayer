@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -eu
+
+DOCKER=docker
+FIXTURES_DIR=./fixtures
+
+## Setup test fixtures
+
+set +x
+rm -rf ${FIXTURES_DIR}
+mkdir -p ${FIXTURES_DIR}/ethereum/chain0/contracts
+set -x
+
+${DOCKER} cp ethereum-chain0:/root/mnemonic ${FIXTURES_DIR}/ethereum/chain0/
+${DOCKER} cp ethereum-chain0:/root/contracts ${FIXTURES_DIR}/ethereum/chain0/
+
+IBCHostAddress=$(cat ${FIXTURES_DIR}/ethereum/chain0/contracts/IBCHost)
+IBCHandlerAddress=$(cat ${FIXTURES_DIR}/ethereum/chain0/contracts/IBCHandler)
+
+sed -e "s/\"ibc_host_address\": \"\"/\"ibc_host_address\": \"${IBCHostAddress}\"/" \
+    -e "s/\"ibc_handler_address\": \"\"/\"ibc_handler_address\": \"${IBCHandlerAddress}\"/" \
+    configs/tpl/ibc-0.json.tpl > configs/demo/ibc-0.json
+
