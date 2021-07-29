@@ -5,7 +5,6 @@
     "migrate": "run-s migrate:chain0 migrate:chain1",
     "migrate:chain0": "truffle migrate --reset --network=chain0",
     "migrate:chain1": "truffle migrate --reset --network=chain1",
-    "migrate:ganache": "truffle migrate --reset --network=development",
     "compile": "run-s compile:ibc copy:ibc",
     "compile:ibc": "cd node_modules/@hyperledger-labs/yui-ibc-solidity && truffle compile",
     "copy:ibc": "cpx \"node_modules/@hyperledger-labs/yui-ibc-solidity/build/contracts/*.json\" build/contracts -v",
