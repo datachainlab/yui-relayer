@@ -15,7 +15,6 @@ export NETWORK_ID1
 .PHONY: clean
 clean:
 	rm -rf $(CURDIR)/backup
-	rm -rf $(CURDIR)/dag
 
 .PHONY: snapshot
 snapshot:
@@ -25,10 +24,6 @@ snapshot:
 	make backup
 	make save-contract-address
 	make down-scaffold
-
-.PHONY: dag
-dag:
-	$(SCRIPT_DIR)/create_dag.sh $(CURDIR)/dag
 
 .PHONY: deploy-contract
 deploy-contract:
