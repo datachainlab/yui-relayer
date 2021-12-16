@@ -2,7 +2,6 @@ package mock
 
 import (
 	"crypto/sha256"
-	"time"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
@@ -34,8 +33,10 @@ func (pr *Prover) GetChainID() string {
 // QueryLatestHeader returns the latest header from the chain
 func (pr *Prover) QueryLatestHeader() (out core.HeaderI, err error) {
 	var header = mocktypes.Header{
-		Height:    pr.sequence,
-		Timestamp: uint64(time.Now().UnixNano()),
+		Height: pr.sequence,
+		// XXX Since the ledger does not hold the ConsensusState for mock,
+		// Timestamp is fixed so that the ledger can reproduce the SelfConsensusState during Connection handshake.
+		Timestamp: uint64(1),
 	}
 	return &header, nil
 }
