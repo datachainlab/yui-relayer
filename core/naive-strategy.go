@@ -154,7 +154,8 @@ func (st NaiveStrategy) RelayPackets(src, dst *ProvableChain, sp *RelaySequences
 	if err != nil {
 		return err
 	}
-	msgs.Dst, err = relayPackets(src, sp.Src, sh, addr)
+	//msgs.Dst, err = relayPacketsConcurrent(src, sp.Src, sh, addr)
+	msgs.Dst, err = relayPacketsInBulk(src, sp.Src, sh, addr)
 	if err != nil {
 		return err
 	}
@@ -162,7 +163,8 @@ func (st NaiveStrategy) RelayPackets(src, dst *ProvableChain, sp *RelaySequences
 	if err != nil {
 		return err
 	}
-	msgs.Src, err = relayPackets(dst, sp.Dst, sh, addr)
+	//msgs.Src, err = relayPacketsConcurrent(dst, sp.Dst, sh, addr)
+	msgs.Src, err = relayPacketsInBulk(dst, sp.Dst, sh, addr)
 	if err != nil {
 		return err
 	}
@@ -334,11 +336,55 @@ func relayPackets(chain *ProvableChain, seqs []uint64, sh SyncHeadersI, sender s
 	return msgs, nil
 }
 
+// WIP
+func relayPacketsInBulk(chain *ProvableChain, seqs []uint64, sh SyncHeadersI, sender sdk.AccAddress) ([]sdk.Msg, error) {
+	logData := map[string]string{"seqs": fmt.Sprintf("%d", len(seqs))}
+	defer utils.Track(time.Now(), "Prover.relayPackets()", logData)
+
+	msgs := make([]sdk.Msg, 0, len(seqs))
+	provableHeight := sh.GetProvableHeight(chain.ChainID())
+	queryableHeight := sh.GetQueryableHeight(chain.ChainID())
+
+	packets, err := chain.QueryPackets(queryableHeight, seqs)
+	if err != nil {
+		log.Println("failed to QueryPackets:", queryableHeight, err)
+		return nil, err
+	}
+	//FIXME: concurrency
+	for _, seq := range seqs {
+		res, err := chain.QueryPacketCommitmentWithProof(provableHeight, seq)
+		if err != nil {
+			log.Println("failed to QueryPacketCommitment:", provableHeight, seq, err)
+			return nil, err
+		}
+		if packet, ok := packets[seq]; ok {
+			msg := chantypes.NewMsgRecvPacket(*packet, res.Proof, res.ProofHeight, sender.String())
+			msgs = append(msgs, msg)
+		}
+	}
+	//for _, seq := range seqs {
+	//	p, err := chain.QueryPacket(int64(sh.GetQueryableHeight(chain.ChainID())), seq)
+	//	if err != nil {
+	//		log.Println("failed to QueryPacket:", int64(sh.GetQueryableHeight(chain.ChainID())), seq, err)
+	//		return nil, err
+	//	}
+	//	provableHeight := sh.GetProvableHeight(chain.ChainID())
+	//	res, err := chain.QueryPacketCommitmentWithProof(provableHeight, seq)
+	//	if err != nil {
+	//		log.Println("failed to QueryPacketCommitment:", provableHeight, seq, err)
+	//		return nil, err
+	//	}
+	//	msg := chantypes.NewMsgRecvPacket(*p, res.Proof, res.ProofHeight, sender.String())
+	//	msgs = append(msgs, msg)
+	//}
+	return msgs, nil
+}
+
 // TODO add packet-timeout support
 // TODO: switch to concurency
 func relayPacketsConcurrent(chain *ProvableChain, seqs []uint64, sh SyncHeadersI, sender sdk.AccAddress) ([]sdk.Msg, error) {
 	logData := map[string]string{"seqs": fmt.Sprintf("%d", len(seqs))}
-	defer utils.Track(time.Now(), "Prover.relayPackets()", logData)
+	defer utils.Track(time.Now(), "relayPacketsConcurrent()", logData)
 
 	if len(seqs) == 0 {
 		return []sdk.Msg{}, nil
@@ -445,7 +491,7 @@ func (st NaiveStrategy) RelayAcknowledgements(src, dst *ProvableChain, sp *Relay
 	if err != nil {
 		return err
 	}
-	msgs.Dst, err = relayAcks(src, dst, sp.Src, sh, addr)
+	msgs.Dst, err = relayAcksConcurency(src, dst, sp.Src, sh, addr)
 	if err != nil {
 		return err
 	}
@@ -453,7 +499,7 @@ func (st NaiveStrategy) RelayAcknowledgements(src, dst *ProvableChain, sp *Relay
 	if err != nil {
 		return err
 	}
-	msgs.Src, err = relayAcks(dst, src, sp.Dst, sh, addr)
+	msgs.Src, err = relayAcksConcurency(dst, src, sp.Dst, sh, addr)
 	if err != nil {
 		return err
 	}
@@ -537,7 +583,7 @@ func relayAcks(receiverChain, senderChain *ProvableChain, seqs []uint64, sh Sync
 // TODO: switch to concurency
 func relayAcksConcurency(receiverChain, senderChain *ProvableChain, seqs []uint64, sh SyncHeadersI, sender sdk.AccAddress) ([]sdk.Msg, error) {
 	logData := map[string]string{"seqs": fmt.Sprintf("%d", len(seqs))}
-	defer utils.Track(time.Now(), "Prover.relayAcks()", logData)
+	defer utils.Track(time.Now(), "relayAcksConcurency()", logData)
 
 	if len(seqs) == 0 {
 		return []sdk.Msg{}, nil

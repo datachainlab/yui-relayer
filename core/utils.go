@@ -94,6 +94,33 @@ func FindPacketFromEventsBySequence(events []abci.Event, seq uint64) (*channelty
 	return nil, nil
 }
 
+func FindPacketFromEventsBySequences(events []abci.Event, seqs []uint64) (map[uint64]*channeltypes.Packet, error) {
+	defer utils.Track(time.Now(), "FindPacketFromEventsBySequence()", nil)
+
+	targetPackets := make(map[uint64]*channeltypes.Packet, len(seqs))
+
+	packets, err := GetPacketsFromEvents(events)
+	if err != nil {
+		return nil, err
+	}
+	for _, packet := range packets {
+		packet := packet
+		if contains(seqs, packet.Sequence) {
+			targetPackets[packet.Sequence] = &packet
+		}
+	}
+	return targetPackets, nil
+}
+
+func contains(arr []uint64, target uint64) bool {
+	for _, val := range arr {
+		if val == target {
+			return true
+		}
+	}
+	return false
+}
+
 type packetAcknowledgement struct {
 	srcPortID    string
 	srcChannelID string

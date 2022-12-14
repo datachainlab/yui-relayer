@@ -311,6 +311,11 @@ func (c *Chain) QueryPacket(height int64, sequence uint64) (*chantypes.Packet, e
 	return c.findPacket(context.Background(), c.pathEnd.PortID, c.pathEnd.ChannelID, sequence)
 }
 
+// Not implemented
+func (c *Chain) QueryPackets(height int64, sequences []uint64) (map[uint64]*chantypes.Packet, error) {
+	return nil, nil
+}
+
 // QueryPacketAcknowledgement returns the acknowledgement corresponding to a sequence
 func (c *Chain) QueryPacketAcknowledgement(height int64, sequence uint64) ([]byte, error) {
 	// TODO give the height as max block number

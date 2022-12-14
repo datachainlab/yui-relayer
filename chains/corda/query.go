@@ -215,6 +215,11 @@ func (c *Chain) QueryPacket(height int64, sequence uint64) (*chantypes.Packet, e
 	return &packet, nil
 }
 
+// Not implemented
+func (c *Chain) QueryPackets(height int64, sequences []uint64) (map[uint64]*chantypes.Packet, error) {
+	return nil, nil
+}
+
 func (c *Chain) QueryPacketAcknowledgement(height int64, sequence uint64) ([]byte, error) {
 	res, err := c.client.chanQuery.PacketAcknowledgement(
 		context.TODO(),

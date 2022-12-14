@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"sort"
 	"strings"
 	"time"
@@ -259,9 +260,9 @@ func (c *Chain) QueryUnrecievedAcknowledgements(height int64, seqs []uint64) ([]
 
 func (src *Chain) QueryPacket(height int64, seq uint64) (*chantypes.Packet, error) {
 	defer utils.Track(time.Now(), "tendermint.QueryPacket()", nil)
-	events := rcvPacketQuery(src.Path().ChannelID, int(seq))
-	//log.Println("events:", events)
-	txs, err := src.QueryTxs(height, 1, 1000, events)
+
+	query := rcvPacketQuery(src.Path().ChannelID, int(seq))
+	txs, err := src.QueryTxs(height, 1, 1000, query)
 	switch {
 	case err != nil:
 		return nil, err
@@ -281,12 +282,41 @@ func (src *Chain) QueryPacket(height int64, seq uint64) (*chantypes.Packet, erro
 	return packet, nil
 }
 
-// QueryTxs returns an array of transactions given a tag
-func (c *Chain) QueryTxs(height int64, page, limit int, events []string) ([]*ctypes.ResultTx, error) {
+func (src *Chain) QueryPackets(height int64, seqs []uint64) (map[uint64]*chantypes.Packet, error) {
+	defer utils.Track(time.Now(), "tendermint.QueryPackets()", nil)
+
+	query := rcvPacketQueries(src.Path().ChannelID, seqs)
+	log.Println("query:", query)
+	txs, err := src.QueryTxs(height, 1, 1000, query)
+	switch {
+	case err != nil:
+		return nil, err
+	case len(txs) == 0:
+		return nil, fmt.Errorf("no transactions returned with query")
+	}
+
+	// merge events
+	events := make([]abci.Event, 0, len(txs[0].TxResult.Events))
+	for i := range txs {
+		events = append(events, txs[i].TxResult.Events...)
+	}
+
+	// get all packets
+	packets, err := core.FindPacketFromEventsBySequences(events, seqs)
+	if err != nil {
+		return nil, err
+	}
+	if len(packets) == 0 {
+		return nil, fmt.Errorf("can't find the packet from events")
+	}
+	return packets, nil
+}
+
+func (c *Chain) QueryTxs(height int64, page, limit int, query string) ([]*ctypes.ResultTx, error) {
 	defer utils.Track(time.Now(), "tendermint.QueryTxs()", nil)
 
-	if len(events) == 0 {
-		return nil, errors.New("must declare at least one event to search")
+	if query == "" {
+		return nil, errors.New("query must be declared to search")
 	}
 
 	if page <= 0 {
@@ -297,7 +327,7 @@ func (c *Chain) QueryTxs(height int64, page, limit int, events []string) ([]*cty
 		return nil, errors.New("limit must greater than 0")
 	}
 	start := time.Now()
-	res, err := c.Client.TxSearch(context.Background(), strings.Join(events, " AND "), true, &page, &limit, "")
+	res, err := c.Client.TxSearch(context.Background(), query, true, &page, &limit, "")
 	utils.TrackLog(time.Since(start), "Client.TxSearch()", nil)
 
 	if err != nil {
@@ -395,10 +425,23 @@ const (
 	waTag = "write_acknowledgement"
 )
 
-func rcvPacketQuery(channelID string, seq int) []string {
-	return []string{fmt.Sprintf("%s.packet_src_channel='%s'", spTag, channelID), fmt.Sprintf("%s.packet_sequence='%d'", spTag, seq)}
+func rcvPacketQuery(channelID string, seq int) string {
+	queries := []string{fmt.Sprintf("%s.packet_src_channel='%s'", spTag, channelID), fmt.Sprintf("%s.packet_sequence='%d'", spTag, seq)}
+	return strings.Join(queries, " AND ")
 }
 
-func ackPacketQuery(channelID string, seq int) []string {
-	return []string{fmt.Sprintf("%s.packet_dst_channel='%s'", waTag, channelID), fmt.Sprintf("%s.packet_sequence='%d'", waTag, seq)}
+func rcvPacketQueries(channelID string, seqs []uint64) string {
+	queries := make([]string, 0, len(seqs))
+	for _, seq := range seqs {
+		queries = append(queries, fmt.Sprintf("%s.packet_sequence='%d'", spTag, seq))
+	}
+	query := strings.Join(queries, " OR ")
+	condChannel := fmt.Sprintf("%s.packet_src_channel='%s'", spTag, channelID)
+	return fmt.Sprintf("%s AND ( %s )", condChannel, query)
+
+}
+
+func ackPacketQuery(channelID string, seq int) string {
+	queries := []string{fmt.Sprintf("%s.packet_dst_channel='%s'", waTag, channelID), fmt.Sprintf("%s.packet_sequence='%d'", waTag, seq)}
+	return strings.Join(queries, " AND ")
 }

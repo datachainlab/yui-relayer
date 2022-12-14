@@ -264,6 +264,11 @@ func (c *Chain) QueryPacket(_ int64, sequence uint64) (*chantypes.Packet, error)
 	return &p, nil
 }
 
+// Not implemented
+func (c *Chain) QueryPackets(height int64, sequences []uint64) (map[uint64]*chantypes.Packet, error) {
+	return nil, nil
+}
+
 func (dst *Chain) QueryPacketAcknowledgement(_ int64, sequence uint64) ([]byte, error) {
 	bz, err := dst.Contract().EvaluateTransaction(queryPacketAcknowledgement, dst.Path().PortID, dst.Path().ChannelID, fmt.Sprint(sequence))
 	if err != nil {

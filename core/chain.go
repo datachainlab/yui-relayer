@@ -135,6 +135,9 @@ type IBCQuerierI interface {
 	// QueryPacket returns the packet corresponding to a sequence
 	QueryPacket(height int64, sequence uint64) (*chantypes.Packet, error)
 
+	// QueryPackets returns the packets corresponding to a sequences
+	QueryPackets(height int64, sequences []uint64) (map[uint64]*chantypes.Packet, error)
+
 	// QueryPacketAcknowledgement returns the acknowledgement corresponding to a sequence
 	QueryPacketAcknowledgement(height int64, sequence uint64) ([]byte, error)
 
