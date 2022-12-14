@@ -312,6 +312,9 @@ func (st NaiveStrategy) UnrelayedAcknowledgements(src, dst *ProvableChain, sh Sy
 
 // TODO add packet-timeout support
 func relayPackets(chain *ProvableChain, seqs []uint64, sh SyncHeadersI, sender sdk.AccAddress) ([]sdk.Msg, error) {
+	logData := map[string]string{"seqs": fmt.Sprintf("%d", len(seqs))}
+	defer utils.Track(time.Now(), "Prover.relayPackets()", logData)
+
 	var msgs []sdk.Msg
 	for _, seq := range seqs {
 		p, err := chain.QueryPacket(int64(sh.GetQueryableHeight(chain.ChainID())), seq)
@@ -504,6 +507,9 @@ func (st NaiveStrategy) RelayAcknowledgements(src, dst *ProvableChain, sp *Relay
 }
 
 func relayAcks(receiverChain, senderChain *ProvableChain, seqs []uint64, sh SyncHeadersI, sender sdk.AccAddress) ([]sdk.Msg, error) {
+	logData := map[string]string{"seqs": fmt.Sprintf("%d", len(seqs))}
+	defer utils.Track(time.Now(), "Prover.relayAcks()", logData)
+
 	var msgs []sdk.Msg
 
 	for _, seq := range seqs {
