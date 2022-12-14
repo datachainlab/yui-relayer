@@ -4,11 +4,16 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
+	"sync"
+	"time"
 
 	retry "github.com/avast/retry-go"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	chantypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/hyperledger-labs/yui-relayer/utils"
 )
 
 // NaiveStrategy is an implementation of Strategy.
@@ -20,6 +25,8 @@ type NaiveStrategy struct {
 
 var _ StrategyI = (*NaiveStrategy)(nil)
 
+const MaxMsgLength = 300
+
 func NewNaiveStrategy() *NaiveStrategy {
 	return &NaiveStrategy{}
 }
@@ -30,6 +37,8 @@ func (st NaiveStrategy) GetType() string {
 }
 
 func (st NaiveStrategy) SetupRelay(ctx context.Context, src, dst *ProvableChain) error {
+	defer utils.Track(time.Now(), "SetupRelay()", nil)
+
 	if err := src.SetupForRelay(ctx); err != nil {
 		return err
 	}
@@ -40,6 +49,8 @@ func (st NaiveStrategy) SetupRelay(ctx context.Context, src, dst *ProvableChain)
 }
 
 func (st NaiveStrategy) UnrelayedSequences(src, dst *ProvableChain, sh SyncHeadersI) (*RelaySequences, error) {
+	defer utils.Track(time.Now(), "UnrelayedSequences()", nil)
+
 	var (
 		eg           = new(errgroup.Group)
 		srcPacketSeq = []uint64{}
@@ -129,12 +140,15 @@ func (st NaiveStrategy) UnrelayedSequences(src, dst *ProvableChain, sh SyncHeade
 }
 
 func (st NaiveStrategy) RelayPackets(src, dst *ProvableChain, sp *RelaySequences, sh SyncHeadersI) error {
+	defer utils.Track(time.Now(), "RelayPackets()", nil)
+
 	// set the maximum relay transaction constraints
 	msgs := &RelayMsgs{
 		Src:          []sdk.Msg{},
 		Dst:          []sdk.Msg{},
 		MaxTxSize:    st.MaxTxSize,
 		MaxMsgLength: st.MaxMsgLength,
+		//MaxMsgLength: MaxMsgLength,
 	}
 	addr, err := dst.GetAddress()
 	if err != nil {
@@ -155,6 +169,7 @@ func (st NaiveStrategy) RelayPackets(src, dst *ProvableChain, sp *RelaySequences
 	if !msgs.Ready() {
 		log.Println(fmt.Sprintf("- No packets to relay between [%s]port{%s} and [%s]port{%s}",
 			src.ChainID(), src.Path().PortID, dst.ChainID(), dst.Path().PortID))
+		log.Printf("sp.Src: %d, sp.Dst: %d, msgs.Dst: %d, msgs.Src: %d", len(sp.Src), len(sp.Dst), len(msgs.Dst), len(msgs.Src))
 		return nil
 	}
 
@@ -202,6 +217,8 @@ func (st NaiveStrategy) RelayPackets(src, dst *ProvableChain, sp *RelaySequences
 }
 
 func (st NaiveStrategy) UnrelayedAcknowledgements(src, dst *ProvableChain, sh SyncHeadersI) (*RelaySequences, error) {
+	defer utils.Track(time.Now(), "UnrelayedAcknowledgements()", nil)
+
 	var (
 		eg           = new(errgroup.Group)
 		srcPacketSeq = []uint64{}
@@ -314,18 +331,111 @@ func relayPackets(chain *ProvableChain, seqs []uint64, sh SyncHeadersI, sender s
 	return msgs, nil
 }
 
+// TODO add packet-timeout support
+// TODO: switch to concurency
+func relayPacketsConcurrent(chain *ProvableChain, seqs []uint64, sh SyncHeadersI, sender sdk.AccAddress) ([]sdk.Msg, error) {
+	logData := map[string]string{"seqs": fmt.Sprintf("%d", len(seqs))}
+	defer utils.Track(time.Now(), "Prover.relayPackets()", logData)
+
+	if len(seqs) == 0 {
+		return []sdk.Msg{}, nil
+	}
+
+	msgs := make([]sdk.Msg, 0, len(seqs))
+
+	provableHeight := sh.GetProvableHeight(chain.ChainID())
+	queryableHeight := sh.GetQueryableHeight(chain.ChainID())
+
+	wg := &sync.WaitGroup{}
+
+	// TODO: This number must be tweaked
+	// The following error occurred at 100 concurrency
+	// failed to QueryPacket: 113 103 post failed: Post "http://localhost:26657":
+	//  context deadline exceeded (Client.Timeout exceeded while awaiting headers)
+	chSemaphore := make(chan struct{}, 30)
+
+	chMsg := make(chan sdk.Msg)
+	chErr := make(chan error)
+
+	wg.Add(1)
+	go func() {
+		for i, seq := range seqs {
+			wg.Add(1)
+			chSemaphore <- struct{}{}
+
+			go func(idx int, sq uint64) {
+				defer func() {
+					<-chSemaphore
+					if idx == 0 {
+						// to wait goroutine for closing channel
+						wg.Done()
+					}
+					wg.Done()
+				}()
+				// concurrent logic
+				p, err := chain.QueryPacket(queryableHeight, sq)
+				if err != nil {
+					if strings.Contains(err.Error(), "Client.Timeout") {
+						// TODO: skip
+						log.Println("skip chain.QueryPacket() due to timeout: ", err)
+						return
+					}
+					log.Println("failed to QueryPacket:", queryableHeight, sq, err)
+					chErr <- err
+					return
+				}
+				res, err := chain.QueryPacketCommitmentWithProof(provableHeight, sq)
+				if err != nil {
+					if strings.Contains(err.Error(), "Client.Timeout") {
+						// TODO: skip
+						log.Println("skip chain.QueryPacketCommitmentWithProof() due to timeout: ", err)
+						return
+					}
+					log.Println("failed to QueryPacketCommitment:", provableHeight, sq, err)
+					chErr <- err
+					return
+				}
+				chMsg <- chantypes.NewMsgRecvPacket(*p, res.Proof, res.ProofHeight, sender.String())
+			}(i, seq)
+		}
+	}()
+	go func() {
+		wg.Wait()
+		close(chMsg)
+		close(chErr)
+	}()
+
+	// wait until channel is closed
+	for {
+		select {
+		case msg, ok := <-chMsg:
+			if !ok {
+				return msgs, nil
+			}
+			msgs = append(msgs, msg)
+		case err, ok := <-chErr:
+			if ok {
+				return nil, err
+			}
+		}
+	}
+}
+
 func logPacketsRelayed(src, dst ChainI, num int) {
 	log.Println(fmt.Sprintf("★ Relayed %d packets: [%s]port{%s}->[%s]port{%s}",
 		num, dst.ChainID(), dst.Path().PortID, src.ChainID(), src.Path().PortID))
 }
 
 func (st NaiveStrategy) RelayAcknowledgements(src, dst *ProvableChain, sp *RelaySequences, sh SyncHeadersI) error {
+	defer utils.Track(time.Now(), "RelayAcknowledgements()", nil)
+
 	// set the maximum relay transaction constraints
 	msgs := &RelayMsgs{
 		Src:          []sdk.Msg{},
 		Dst:          []sdk.Msg{},
 		MaxTxSize:    st.MaxTxSize,
 		MaxMsgLength: st.MaxMsgLength,
+		//MaxMsgLength: MaxMsgLength,
 	}
 
 	addr, err := dst.GetAddress()
@@ -347,6 +457,7 @@ func (st NaiveStrategy) RelayAcknowledgements(src, dst *ProvableChain, sp *Relay
 	if !msgs.Ready() {
 		log.Println(fmt.Sprintf("- No acknowledgements to relay between [%s]port{%s} and [%s]port{%s}",
 			src.ChainID(), src.Path().PortID, dst.ChainID(), dst.Path().PortID))
+		log.Printf("sp.Src: %d, sp.Dst: %d, msgs.Dst: %d, msgs.Src: %d", len(sp.Src), len(sp.Dst), len(msgs.Dst), len(msgs.Src))
 		return nil
 	}
 
@@ -415,4 +526,97 @@ func relayAcks(receiverChain, senderChain *ProvableChain, seqs []uint64, sh Sync
 	}
 
 	return msgs, nil
+}
+
+// TODO: switch to concurency
+func relayAcksConcurency(receiverChain, senderChain *ProvableChain, seqs []uint64, sh SyncHeadersI, sender sdk.AccAddress) ([]sdk.Msg, error) {
+	logData := map[string]string{"seqs": fmt.Sprintf("%d", len(seqs))}
+	defer utils.Track(time.Now(), "Prover.relayAcks()", logData)
+
+	if len(seqs) == 0 {
+		return []sdk.Msg{}, nil
+	}
+
+	msgs := make([]sdk.Msg, 0, len(seqs))
+	provableHeight := sh.GetProvableHeight(receiverChain.ChainID())
+	senderQueryableHeight := sh.GetQueryableHeight(senderChain.ChainID())
+	receiverQueryableHeight := sh.GetQueryableHeight(receiverChain.ChainID())
+
+	wg := &sync.WaitGroup{}
+
+	// TODO: This number must be tweaked
+	// The following error occurred at 100 concurrency
+	// failed to QueryPacket: 113 103 post failed: Post "http://localhost:26657":
+	//  context deadline exceeded (Client.Timeout exceeded while awaiting headers)
+	chSemaphore := make(chan struct{}, 30)
+
+	chMsg := make(chan sdk.Msg)
+	chErr := make(chan error)
+
+	wg.Add(1)
+	go func() {
+		for i, seq := range seqs {
+			wg.Add(1)
+			chSemaphore <- struct{}{}
+
+			go func(idx int, sq uint64) {
+				defer func() {
+					<-chSemaphore
+					if idx == 0 {
+						// to wait goroutine for closing channel
+						wg.Done()
+					}
+					wg.Done()
+				}()
+				// concurrent logic
+				p, err := senderChain.QueryPacket(senderQueryableHeight, sq)
+				if err != nil {
+					if strings.Contains(err.Error(), "Client.Timeout") {
+						// TODO: skip
+						log.Println("skip senderChain.QueryPacket() due to timeout: ", err)
+						return
+					}
+					chErr <- err
+					return
+				}
+				ack, err := receiverChain.QueryPacketAcknowledgement(receiverQueryableHeight, sq)
+				if err != nil {
+					if strings.Contains(err.Error(), "Client.Timeout") {
+						// TODO: skip
+						log.Println("skip receiverChain.QueryPacketAcknowledgement() due to timeout: ", err)
+						return
+					}
+					chErr <- err
+					return
+				}
+				res, err := receiverChain.QueryPacketAcknowledgementCommitmentWithProof(provableHeight, sq)
+				if err != nil {
+					chErr <- err
+					return
+				}
+
+				chMsg <- chantypes.NewMsgAcknowledgement(*p, ack, res.Proof, res.ProofHeight, sender.String())
+			}(i, seq)
+		}
+	}()
+	go func() {
+		wg.Wait()
+		close(chMsg)
+		close(chErr)
+	}()
+
+	// wait until channel is closed
+	for {
+		select {
+		case msg, ok := <-chMsg:
+			if !ok {
+				return msgs, nil
+			}
+			msgs = append(msgs, msg)
+		case err, ok := <-chErr:
+			if ok {
+				return nil, err
+			}
+		}
+	}
 }

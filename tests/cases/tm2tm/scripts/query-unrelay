@@ -1,0 +1,14 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
+source ${SCRIPT_DIR}/load-util
+
+set -eu
+
+json=$(${RLY} query unrelayed-packets ibc01)
+count=$(echo $json | jq '[.src[]] | length')
+echo "unrelayed-packets: ${count}"
+
+json=$(${RLY} query unrelayed-acknowledgements ibc01)
+count=$(echo $json | jq '[.dst[]] | length')
+echo "unrelayed-acknowledgements: ${count}"

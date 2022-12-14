@@ -1,0 +1,9 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
+source ${SCRIPT_DIR}/load-util
+
+set -eu
+
+name=$1
+time ${RLY} --logfile ./relay-${name}.log tx relay ibc01

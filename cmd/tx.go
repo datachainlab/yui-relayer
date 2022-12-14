@@ -23,6 +23,7 @@ func transactionCmd(ctx *config.Context) *cobra.Command {
 
 	cmd.AddCommand(
 		xfersend(ctx),
+		xfersendBulk(ctx),
 		relayMsgsCmd(ctx),
 		relayAcksCmd(ctx),
 		flags.LineBreak,

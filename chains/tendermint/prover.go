@@ -17,6 +17,7 @@ import (
 	tmtypes "github.com/tendermint/tendermint/types"
 
 	"github.com/hyperledger-labs/yui-relayer/core"
+	"github.com/hyperledger-labs/yui-relayer/utils"
 )
 
 type Prover struct {
@@ -49,36 +50,43 @@ func (pr *Prover) GetChainID() string {
 
 // QueryClientConsensusState returns the ClientConsensusState and its proof
 func (pr *Prover) QueryClientConsensusStateWithProof(height int64, dstClientConsHeight ibcexported.Height) (*clienttypes.QueryConsensusStateResponse, error) {
+	defer utils.Track(time.Now(), "Prover.QueryClientConsensusStateWithProof()", nil)
 	return pr.chain.queryClientConsensusState(height, dstClientConsHeight, true)
 }
 
 // QueryClientStateWithProof returns the ClientState and its proof
 func (pr *Prover) QueryClientStateWithProof(height int64) (*clienttypes.QueryClientStateResponse, error) {
+	defer utils.Track(time.Now(), "Prover.QueryClientStateWithProof()", nil)
 	return pr.chain.queryClientState(height, true)
 }
 
 // QueryConnectionWithProof returns the Connection and its proof
 func (pr *Prover) QueryConnectionWithProof(height int64) (*conntypes.QueryConnectionResponse, error) {
+	defer utils.Track(time.Now(), "Prover.QueryConnectionWithProof()", nil)
 	return pr.chain.queryConnection(height, true)
 }
 
 // QueryChannelWithProof returns the Channel and its proof
 func (pr *Prover) QueryChannelWithProof(height int64) (chanRes *chantypes.QueryChannelResponse, err error) {
+	defer utils.Track(time.Now(), "Prover.QueryChannelWithProof()", nil)
 	return pr.chain.queryChannel(height, true)
 }
 
 // QueryPacketCommitmentWithProof returns the packet commitment and its proof
 func (pr *Prover) QueryPacketCommitmentWithProof(height int64, seq uint64) (comRes *chantypes.QueryPacketCommitmentResponse, err error) {
+	defer utils.Track(time.Now(), "Prover.QueryPacketCommitmentWithProof()", nil)
 	return pr.chain.queryPacketCommitment(height, seq, true)
 }
 
 // QueryPacketAcknowledgementCommitmentWithProof returns the packet acknowledgement commitment and its proof
 func (pr *Prover) QueryPacketAcknowledgementCommitmentWithProof(height int64, seq uint64) (ackRes *chantypes.QueryPacketAcknowledgementResponse, err error) {
+	defer utils.Track(time.Now(), "Prover.QueryPacketAcknowledgementCommitmentWithProof()", nil)
 	return pr.chain.queryPacketAcknowledgementCommitment(height, seq, true)
 }
 
 // QueryLatestHeader returns the latest header from the chain
 func (pr *Prover) QueryLatestHeader() (out core.HeaderI, err error) {
+	defer utils.Track(time.Now(), "Prover.QueryLatestHeader()", nil)
 	var h int64
 	if h, err = pr.chain.GetLatestHeight(); err != nil {
 		return nil, err

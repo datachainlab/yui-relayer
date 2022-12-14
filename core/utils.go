@@ -5,10 +5,13 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	clienttypes "github.com/cosmos/ibc-go/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	abci "github.com/tendermint/tendermint/abci/types"
+
+	"github.com/hyperledger-labs/yui-relayer/utils"
 )
 
 func GetPacketsFromEvents(events []abci.Event) ([]channeltypes.Packet, error) {
@@ -77,6 +80,8 @@ func GetPacketsFromEvents(events []abci.Event) ([]channeltypes.Packet, error) {
 }
 
 func FindPacketFromEventsBySequence(events []abci.Event, seq uint64) (*channeltypes.Packet, error) {
+	defer utils.Track(time.Now(), "FindPacketFromEventsBySequence()", nil)
+
 	packets, err := GetPacketsFromEvents(events)
 	if err != nil {
 		return nil, err

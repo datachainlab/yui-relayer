@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Load test by relayer service
+
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
+RLY_BINARY=${SCRIPT_DIR}/../../../../build/uly
+RLY="${RLY_BINARY} --debug"
+
+# XXX set proper value
+TX_INTERNAL=3
+
+TM_ADDRESS0=$(${RLY} tendermint keys show ibc0 testkey)
+TM_ADDRESS1=$(${RLY} tendermint keys show ibc1 testkey)
+
+CHAINID_ONE=ibc0
+CHAINID_TWO=ibc1
+PATH_NAME=ibc01
+
+timestamp=""
+function timestamp() {
+  # RLY service
+  OS="`uname`"
+  timestamp=""
+  if [[ "$OS" =~ ^Darwin ]]; then
+    timestamp=$(date -v+10S '+%s')
+  elif [[ "$OS" =~ ^Linux ]]; then
+    timestamp=$(date -d'+10second' +%s)
+  else
+    echo "This platform is not supported"
+    exit 1
+  fi
+}

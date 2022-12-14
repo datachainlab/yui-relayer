@@ -1,0 +1,39 @@
+#!/bin/bash
+
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
+source ${SCRIPT_DIR}/load-util
+
+
+set -eu
+
+# src/dst
+mode=$1 # unrelay or acks
+target=$2
+
+cmd=unrelayed-packets
+if [ $mode == "acks" ];then
+  cmd=unrelayed-acknowledgements
+fi
+
+echo $cmd
+
+for (( i=1; i<=5; i++ ))
+do
+  json=$(${RLY} query ${cmd} ibc01)
+  count=0
+  if [ $target == "src" ];then
+    count=$(echo $json | jq '[.src[]] | length')
+  elif [ $target == "dst" ];then
+    count=$(echo $json | jq '[.dst[]] | length')
+  else
+    exit 1
+  fi
+  echo $count
+  if [ $count -gt 0 ]; then
+    exit 0
+  fi
+  sleep 5
+done
+exit 1
+
+

@@ -27,6 +27,7 @@ import (
 	libclient "github.com/tendermint/tendermint/rpc/jsonrpc/client"
 
 	"github.com/hyperledger-labs/yui-relayer/core"
+	"github.com/hyperledger-labs/yui-relayer/utils"
 )
 
 var (
@@ -78,6 +79,7 @@ func (c *Chain) Codec() codec.ProtoCodecMarshaler {
 
 // GetAddress returns the sdk.AccAddress associated with the configred key
 func (c *Chain) GetAddress() (sdk.AccAddress, error) {
+	defer utils.Track(time.Now(), "tendermint.GetAddress()", nil)
 	defer c.UseSDKContext()()
 	if c.address != nil {
 		return c.address, nil

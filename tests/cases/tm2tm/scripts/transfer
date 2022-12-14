@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -eu
+
+# Load test by Relayer shot
+
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
+source ${SCRIPT_DIR}/load-util
+
+if [ $# != 1 ]; then
+  echo "args 1 is required for packet count"
+  exit 1
+fi
+packetCount=$1
+
+if [ $packetCount -lt 1 ];then
+  echo "args 1 must be more than 0"
+  exit 1
+fi
+
+echo "----------------------------------------------------"
+echo "-----           start transfer                 -----"
+echo "----------------------------------------------------"
+echo "packetCount: $packetCount"
+
+#timestamp
+
+# Run tx transfer
+#for (( i=1; i<=$packetCount; i++ ))
+#do
+#  # concurrent
+#  #${RLY} tx transfer ibc01 ibc0 ibc1 100samoleans ${TM_ADDRESS1} &
+#
+#  time ${RLY} tx transfer ibc01 ibc0 ibc1 100samoleans ${TM_ADDRESS1}
+#  # with logfile
+#  #time ${RLY} --logfile ./relay-transfer-${timestamp}.log tx transfer ibc01 ibc0 ibc1 100samoleans ${TM_ADDRESS1}
+#done
+#wait
+
+# Note: tx transfer-bulk subcommand send multiple msgs in bulk at once
+time ${RLY} tx transfer-bulk ibc01 ibc0 ibc1 100samoleans ${TM_ADDRESS1} ${packetCount}

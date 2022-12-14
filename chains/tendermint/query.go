@@ -23,11 +23,13 @@ import (
 	chantypes "github.com/cosmos/ibc-go/modules/core/04-channel/types"
 	committypes "github.com/cosmos/ibc-go/modules/core/23-commitment/types"
 	ibcexported "github.com/cosmos/ibc-go/modules/core/exported"
-	"github.com/hyperledger-labs/yui-relayer/core"
 	abci "github.com/tendermint/tendermint/abci/types"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	ctypes "github.com/tendermint/tendermint/rpc/core/types"
 	tmtypes "github.com/tendermint/tendermint/types"
+
+	"github.com/hyperledger-labs/yui-relayer/core"
+	"github.com/hyperledger-labs/yui-relayer/utils"
 )
 
 // QueryClientState retrevies the latest consensus state for a client in state at a given height
@@ -167,6 +169,8 @@ func (c *Chain) queryPacketAcknowledgementCommitment(height int64, seq uint64, p
 }
 
 func (dst *Chain) QueryPacketAcknowledgement(height int64, sequence uint64) ([]byte, error) {
+	defer utils.Track(time.Now(), "tendermint.QueryPacketAcknowledgement()", nil)
+
 	txs, err := dst.QueryTxs(height, 1, 1000, ackPacketQuery(dst.Path().ChannelID, int(sequence)))
 	switch {
 	case err != nil:
@@ -250,7 +254,10 @@ func (c *Chain) QueryUnrecievedAcknowledgements(height int64, seqs []uint64) ([]
 }
 
 func (src *Chain) QueryPacket(height int64, seq uint64) (*chantypes.Packet, error) {
-	txs, err := src.QueryTxs(height, 1, 1000, rcvPacketQuery(src.Path().ChannelID, int(seq)))
+	defer utils.Track(time.Now(), "tendermint.QueryPacket()", nil)
+	events := rcvPacketQuery(src.Path().ChannelID, int(seq))
+	//log.Println("events:", events)
+	txs, err := src.QueryTxs(height, 1, 1000, events)
 	switch {
 	case err != nil:
 		return nil, err
@@ -272,6 +279,8 @@ func (src *Chain) QueryPacket(height int64, seq uint64) (*chantypes.Packet, erro
 
 // QueryTxs returns an array of transactions given a tag
 func (c *Chain) QueryTxs(height int64, page, limit int, events []string) ([]*ctypes.ResultTx, error) {
+	defer utils.Track(time.Now(), "tendermint.QueryTxs()", nil)
+
 	if len(events) == 0 {
 		return nil, errors.New("must declare at least one event to search")
 	}
@@ -283,8 +292,10 @@ func (c *Chain) QueryTxs(height int64, page, limit int, events []string) ([]*cty
 	if limit <= 0 {
 		return nil, errors.New("limit must greater than 0")
 	}
-
+	start := time.Now()
 	res, err := c.Client.TxSearch(context.Background(), strings.Join(events, " AND "), true, &page, &limit, "")
+	utils.TrackLog(time.Since(start), "Client.TxSearch()", nil)
+
 	if err != nil {
 		return nil, err
 	}

@@ -18,6 +18,7 @@ RPCPORT=$4
 P2PPORT=$5
 PROFPORT=$6
 GRPCPORT=$7
+EMPTY_BLOCK=$8
 
 if [ -z "$1" ]; then
   display_usage "[BINARY] ($BINARY|akash)"
@@ -94,7 +95,11 @@ if [ $platform = 'linux' ]; then
   sed -i 's/timeout_commit = "5s"/timeout_commit = "1s"/g' $CHAINDIR/$CHAINID/config/config.toml
   sed -i 's/timeout_propose = "3s"/timeout_propose = "1s"/g' $CHAINDIR/$CHAINID/config/config.toml
   sed -i 's/index_all_keys = false/index_all_keys = true/g' $CHAINDIR/$CHAINID/config/config.toml
-  # sed -i '' 's#index-events = \[\]#index-events = \["message.action","send_packet.packet_src_channel","send_packet.packet_sequence"\]#g' $CHAINDIR/$CHAINID/config/app.toml
+  if [ $EMPTY_BLOCK = 'false' ]; then
+    sed -i 's/create_empty_blocks = true/create_empty_blocks = false/g' $CHAINDIR/$CHAINID/config/config.toml
+  fi
+  #sed -i 's/create_empty_blocks_interval = "0s"/create_empty_blocks_interval = "60s"/g' $CHAINDIR/$CHAINID/config/config.toml
+  sed -i 's/log_level = "info"/log_level = "debug"/g' $CHAINDIR/$CHAINID/config/config.toml
 else
   sed -i '' 's#"tcp://127.0.0.1:26657"#"tcp://0.0.0.0:'"$RPCPORT"'"#g' $CHAINDIR/$CHAINID/config/config.toml
   sed -i '' 's#"tcp://0.0.0.0:26656"#"tcp://0.0.0.0:'"$P2PPORT"'"#g' $CHAINDIR/$CHAINID/config/config.toml
@@ -102,5 +107,9 @@ else
   sed -i '' 's/timeout_commit = "5s"/timeout_commit = "1s"/g' $CHAINDIR/$CHAINID/config/config.toml
   sed -i '' 's/timeout_propose = "3s"/timeout_propose = "1s"/g' $CHAINDIR/$CHAINID/config/config.toml
   sed -i '' 's/index_all_keys = false/index_all_keys = true/g' $CHAINDIR/$CHAINID/config/config.toml
-  # sed -i '' 's#index-events = \[\]#index-events = \["message.action","send_packet.packet_src_channel","send_packet.packet_sequence"\]#g' $CHAINDIR/$CHAINID/config/app.toml
+  if [ $EMPTY_BLOCK = 'false' ]; then
+    sed -i '' 's/create_empty_blocks = false/create_empty_blocks = true/g' $CHAINDIR/$CHAINID/config/config.toml
+  fi
+  #sed -i '' 's/create_empty_blocks_interval = "0s"/create_empty_blocks_interval = "60s"/g' $CHAINDIR/$CHAINID/config/config.toml
+  sed -i '' 's/log_level = "info"/log_level = "debug"/g' $CHAINDIR/$CHAINID/config/config.toml
 fi

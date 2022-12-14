@@ -1,7 +1,10 @@
 package core
 
 import (
+	"time"
+
 	"github.com/cosmos/ibc-go/modules/core/exported"
+	"github.com/hyperledger-labs/yui-relayer/utils"
 )
 
 type HeaderI interface {
@@ -45,6 +48,7 @@ func NewSyncHeaders(src, dst LightClientI) (SyncHeadersI, error) {
 
 // GetProvableHeight implements SyncHeadersI
 func (sh syncHeaders) GetProvableHeight(chainID string) int64 {
+	defer utils.Track(time.Now(), "syncHeaders.GetProvableHeight()", nil)
 	return sh.latestProvableHeights[chainID]
 }
 
@@ -55,6 +59,7 @@ func (sh syncHeaders) GetQueryableHeight(chainID string) int64 {
 
 // GetHeader implements SyncHeadersI
 func (sh syncHeaders) GetHeader(src, dst LightClientIBCQueryierI) (HeaderI, error) {
+	defer utils.Track(time.Now(), "syncHeaders.GetHeader()", nil)
 	return src.SetupHeader(dst, sh.latestHeaders[src.GetChainID()])
 }
 

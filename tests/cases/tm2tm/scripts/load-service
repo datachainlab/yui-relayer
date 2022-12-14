@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -eux
+
+# Load test by Relayer service
+
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
+source ${SCRIPT_DIR}/load-util
+
+echo "----------------------------------------------------"
+echo "-----           start relay service            -----"
+echo "----------------------------------------------------"
+
+timestamp
+$RLY --logfile ./relay-service-${timestamp}.log service start $PATH_NAME

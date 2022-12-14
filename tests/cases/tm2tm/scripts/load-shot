@@ -1,0 +1,26 @@
+#!/bin/bash
+
+set -eux
+
+# Load test by Relayer shot
+
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
+source ${SCRIPT_DIR}/load-util
+
+echo "----------------------------------------------------"
+echo "-----           start relay shot               -----"
+echo "----------------------------------------------------"
+
+# Run RLY
+#for (( i=1; i<=$packetCount; i++ ))
+#do
+#  ${RLY} tx relay ibc01
+#  sleep ${TX_INTERNAL}
+#  ${RLY} tx acks ibc01
+#  sleep ${TX_INTERNAL}
+#done
+
+sleep ${TX_INTERNAL}
+${RLY} tx relay ibc01
+sleep ${TX_INTERNAL}
+${RLY} tx acks ibc01

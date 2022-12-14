@@ -9,6 +9,8 @@ import (
 	"github.com/hyperledger-labs/yui-relayer/core"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -16,6 +18,7 @@ import (
 var (
 	homePath    string
 	debug       bool
+	logFile     string
 	defaultHome = os.ExpandEnv("$HOME/.urelayer")
 )
 
@@ -34,10 +37,14 @@ func Execute(modules ...config.ModuleI) error {
 	// Register top level flags --home and --debug
 	rootCmd.PersistentFlags().StringVar(&homePath, flags.FlagHome, defaultHome, "set home directory")
 	rootCmd.PersistentFlags().BoolVarP(&debug, "debug", "d", false, "debug output")
+	rootCmd.PersistentFlags().StringVarP(&logFile, "logfile", "l", "", "log file path for performance test")
 	if err := viper.BindPFlag(flags.FlagHome, rootCmd.Flags().Lookup(flags.FlagHome)); err != nil {
 		return err
 	}
 	if err := viper.BindPFlag("debug", rootCmd.Flags().Lookup("debug")); err != nil {
+		return err
+	}
+	if err := viper.BindPFlag("logfile", rootCmd.Flags().Lookup("logfile")); err != nil {
 		return err
 	}
 
@@ -50,7 +57,6 @@ func Execute(modules ...config.ModuleI) error {
 	ctx := &config.Context{Config: &config.Config{}, Codec: codec}
 
 	// Register subcommands
-
 	rootCmd.AddCommand(
 		configCmd(ctx),
 		chainsCmd(ctx),
@@ -71,6 +77,10 @@ func Execute(modules ...config.ModuleI) error {
 		if err := viper.BindPFlags(cmd.Flags()); err != nil {
 			return err
 		}
+
+		if err := initLog(); err != nil {
+			return err
+		}
 		return initConfig(ctx, rootCmd)
 	}
 
@@ -81,4 +91,23 @@ func Execute(modules ...config.ModuleI) error {
 func readStdin() (string, error) {
 	str, err := bufio.NewReader(os.Stdin).ReadString('\n')
 	return strings.TrimSpace(str), err
+}
+
+// initLog configures logging
+func initLog() error {
+	if logFile == "" {
+		zerolog.SetGlobalLevel(zerolog.Level(7)) // Disabled
+		return nil
+	}
+
+	file, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0o600)
+	if err != nil {
+		panic(err)
+	}
+
+	log.Logger = log.Output(file)
+	zerolog.SetGlobalLevel(zerolog.Level(1)) // Info
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+
+	return nil
 }

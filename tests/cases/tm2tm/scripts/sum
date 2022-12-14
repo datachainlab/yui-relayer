@@ -1,0 +1,21 @@
+#!/bin/bash
+
+LOG_DIR=$(cd $(dirname $0); pwd)/..
+
+fileName=$1
+funcName=$2
+
+targetLine=$(cat ${LOG_DIR}/${fileName} | grep ${funcName})
+
+unit=""
+sum=0
+count=0
+for v in ${targetLine}
+do
+  elapsed=$(echo $v | jq -r '.elapsed')
+  unit=${elapsed: -2:2}
+  num=$(echo $elapsed | tr -d $unit)
+  sum=$(echo "scale=5; $sum + $num" | bc)
+  count=$(( count + 1 ))
+done
+echo "$sum$unit , count: $count"
