@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eux
+set -eu
 
 # Load test by Relayer service
 
@@ -12,4 +12,5 @@ echo "-----           start relay service            -----"
 echo "----------------------------------------------------"
 
 timestamp
+echo "log file: ./relay-service-${timestamp}.log"
 $RLY --logfile ./relay-service-${timestamp}.log service start $PATH_NAME

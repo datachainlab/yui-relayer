@@ -87,11 +87,15 @@ scenario: clean
 	make -C tests/cases/tm2tm wait-unrelay MODE=acks TARGET=dst
 	make -C tests/cases/tm2tm tx-acks NAME=$(NAME)
 
-# e.g. make scenario-service COUNT=10000 NAME=service-tx-100
 .PHONY: scenario-service
 scenario-service:
-	make transfer COUNT=$(COUNT)
 	make -C tests/cases/tm2tm load-service
+
+# e.g. make scenario-service-transfer MSG=1 INTERVAL=10
+.PHONY: scenario-service-transfer
+scenario-service-transfer:
+	make -C tests/cases/tm2tm loop-transfer MSG=$(MSG) INTERVAL=$(INTERVAL)
+
 
 # e.g. make tally-log RELAY=relay-tx-100.log ACKS=acks-tx-100.log
 tally-log:

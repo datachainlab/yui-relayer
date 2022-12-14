@@ -1,0 +1,33 @@
+#!/bin/bash
+
+set -u
+
+# Load test by Relayer service
+
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
+source ${SCRIPT_DIR}/load-util
+
+msgCount=$1
+interval=$2
+
+echo "----------------------------------------------------"
+echo "-----           loop transfer                  -----"
+echo "----------------------------------------------------"
+
+echo "interval: ${interval}, msgCount: ${msgCount}"
+
+while true
+do
+  echo "transfer ..."
+  ${RLY} tx transfer-bulk ibc01 ibc0 ibc1 100samoleans ${TM_ADDRESS1} ${msgCount}
+  sleep ${interval}
+
+  # count
+  json=$(${RLY} query unrelayed-packets ibc01)
+  count=$(echo $json | jq '[.src[]] | length')
+  echo "unrelayed-packets count: ${count}"
+
+  json=$(${RLY} query unrelayed-acknowledgements ibc01)
+  count=$(echo $json | jq '[.dst[]] | length')
+  echo "unrelayed-acknowledgements count: ${count}"
+done

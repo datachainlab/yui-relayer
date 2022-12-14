@@ -49,6 +49,11 @@ transfer:
 load-service:
 	./scripts/load-service
 
+# e.g. make loop-transfer MSG=1 INTERVAL=10
+.PHONY: loop-transfer
+loop-transfer:
+	./scripts/loop-transfer $(MSG) $(INTERVAL)
+
 .PHONY: load-shot
 load-shot:
 	./scripts/load-shot

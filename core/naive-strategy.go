@@ -169,7 +169,7 @@ func (st NaiveStrategy) RelayPackets(src, dst *ProvableChain, sp *RelaySequences
 	if !msgs.Ready() {
 		log.Println(fmt.Sprintf("- No packets to relay between [%s]port{%s} and [%s]port{%s}",
 			src.ChainID(), src.Path().PortID, dst.ChainID(), dst.Path().PortID))
-		log.Printf("sp.Src: %d, sp.Dst: %d, msgs.Dst: %d, msgs.Src: %d", len(sp.Src), len(sp.Dst), len(msgs.Dst), len(msgs.Src))
+		//log.Printf("sp.Src: %d, sp.Dst: %d, msgs.Dst: %d, msgs.Src: %d", len(sp.Src), len(sp.Dst), len(msgs.Dst), len(msgs.Src))
 		return nil
 	}
 
@@ -460,7 +460,7 @@ func (st NaiveStrategy) RelayAcknowledgements(src, dst *ProvableChain, sp *Relay
 	if !msgs.Ready() {
 		log.Println(fmt.Sprintf("- No acknowledgements to relay between [%s]port{%s} and [%s]port{%s}",
 			src.ChainID(), src.Path().PortID, dst.ChainID(), dst.Path().PortID))
-		log.Printf("sp.Src: %d, sp.Dst: %d, msgs.Dst: %d, msgs.Src: %d", len(sp.Src), len(sp.Dst), len(msgs.Dst), len(msgs.Src))
+		//log.Printf("sp.Src: %d, sp.Dst: %d, msgs.Dst: %d, msgs.Src: %d", len(sp.Src), len(sp.Dst), len(msgs.Dst), len(msgs.Src))
 		return nil
 	}
 
