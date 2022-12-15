@@ -9,6 +9,7 @@ set -eu
 # src/dst
 mode=$1 # unrelay or acks
 target=$2
+expectedCount=$3
 
 cmd=unrelayed-packets
 if [ $mode == "acks" ];then
@@ -17,7 +18,7 @@ fi
 
 echo $cmd
 
-for (( i=1; i<=5; i++ ))
+for (( i=1; i<=20; i++ ))
 do
   json=$(${RLY} query ${cmd} ibc01)
   count=0
@@ -29,7 +30,7 @@ do
     exit 1
   fi
   echo $count
-  if [ $count -gt 0 ]; then
+  if [ $count -eq $expectedCount ]; then
     exit 0
   fi
   sleep 5

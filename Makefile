@@ -81,11 +81,30 @@ scenario: clean
 	#make -C tests/cases/tm2tm scenario
 	make transfer COUNT=$(COUNT)
 	# wait unrelay
-	make -C tests/cases/tm2tm wait-unrelay MODE=unrelay TARGET=src
+	make -C tests/cases/tm2tm wait-unrelay MODE=unrelay TARGET=src COUNT=$(COUNT)
 	make -C tests/cases/tm2tm tx-relay NAME=$(NAME)
 	# wait unrelay-akcs
-	make -C tests/cases/tm2tm wait-unrelay MODE=acks TARGET=dst
+	make -C tests/cases/tm2tm wait-unrelay MODE=acks TARGET=dst COUNT=$(COUNT)
 	make -C tests/cases/tm2tm tx-acks NAME=$(NAME)
+
+.PHONY: scenario-all
+scenario-all: clean
+	#make run-tm-not-empty
+	make scenario COUNT=1 NAME=tx-1
+	make scenario COUNT=10 NAME=tx-10
+	make scenario COUNT=20 NAME=tx-20
+	make scenario COUNT=30 NAME=tx-30
+	make scenario COUNT=40 NAME=tx-40
+	make scenario COUNT=50 NAME=tx-50
+	make scenario COUNT=60 NAME=tx-60
+	make scenario COUNT=70 NAME=tx-70
+	make scenario COUNT=80 NAME=tx-80
+	make scenario COUNT=90 NAME=tx-90
+	make scenario COUNT=100 NAME=tx-100
+	make scenario COUNT=200 NAME=tx-200
+	make scenario COUNT=300 NAME=tx-300
+	make scenario COUNT=400 NAME=tx-400
+	make scenario COUNT=500 NAME=tx-500
 
 .PHONY: scenario-service
 scenario-service:

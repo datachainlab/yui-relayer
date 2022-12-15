@@ -70,10 +70,10 @@ tx-acks:
 query-unrelay:
 	./scripts/query-unrelay
 
-# e.g. make wait-unrelay MODE=unrelay TARGET=src
+# e.g. make wait-unrelay MODE=unrelay TARGET=src COUNT=100
 .PHONY: wait-unrelay
 wait-unrelay:
-	./scripts/wait-unrelay $(MODE) $(TARGET)
+	./scripts/wait-unrelay $(MODE) $(TARGET) $(COUNT)
 
 # e.g. make sum-relay NAME=relay-tx-100.log
 .PHONY: sum-relay
