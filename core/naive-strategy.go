@@ -25,7 +25,7 @@ type NaiveStrategy struct {
 
 var _ StrategyI = (*NaiveStrategy)(nil)
 
-const MaxMsgLength = 300
+const MaxMsgLength = 400
 
 func NewNaiveStrategy() *NaiveStrategy {
 	return &NaiveStrategy{}
@@ -144,18 +144,18 @@ func (st NaiveStrategy) RelayPackets(src, dst *ProvableChain, sp *RelaySequences
 
 	// set the maximum relay transaction constraints
 	msgs := &RelayMsgs{
-		Src:          []sdk.Msg{},
-		Dst:          []sdk.Msg{},
-		MaxTxSize:    st.MaxTxSize,
-		MaxMsgLength: st.MaxMsgLength,
-		//MaxMsgLength: MaxMsgLength,
+		Src:       []sdk.Msg{},
+		Dst:       []sdk.Msg{},
+		MaxTxSize: st.MaxTxSize,
+		//MaxMsgLength: st.MaxMsgLength,
+		MaxMsgLength: MaxMsgLength,
 	}
 	addr, err := dst.GetAddress()
 	if err != nil {
 		return err
 	}
-	//msgs.Dst, err = relayPacketsConcurrent(src, sp.Src, sh, addr)
-	msgs.Dst, err = relayPacketsInBulk(src, sp.Src, sh, addr)
+	msgs.Dst, err = relayPacketsConcurrent(src, sp.Src, sh, addr)
+	//msgs.Dst, err = relayPacketsInBulk(src, sp.Src, sh, addr)
 	if err != nil {
 		return err
 	}
@@ -163,8 +163,8 @@ func (st NaiveStrategy) RelayPackets(src, dst *ProvableChain, sp *RelaySequences
 	if err != nil {
 		return err
 	}
-	//msgs.Src, err = relayPacketsConcurrent(dst, sp.Dst, sh, addr)
-	msgs.Src, err = relayPacketsInBulk(dst, sp.Dst, sh, addr)
+	msgs.Src, err = relayPacketsConcurrent(dst, sp.Dst, sh, addr)
+	//msgs.Src, err = relayPacketsInBulk(dst, sp.Dst, sh, addr)
 	if err != nil {
 		return err
 	}
@@ -336,7 +336,7 @@ func relayPackets(chain *ProvableChain, seqs []uint64, sh SyncHeadersI, sender s
 	return msgs, nil
 }
 
-// WIP
+// Note: This pattern doesn't work due to query's condition limitation
 func relayPacketsInBulk(chain *ProvableChain, seqs []uint64, sh SyncHeadersI, sender sdk.AccAddress) ([]sdk.Msg, error) {
 	logData := map[string]string{"seqs": fmt.Sprintf("%d", len(seqs))}
 	defer utils.Track(time.Now(), "Prover.relayPackets()", logData)
@@ -362,21 +362,6 @@ func relayPacketsInBulk(chain *ProvableChain, seqs []uint64, sh SyncHeadersI, se
 			msgs = append(msgs, msg)
 		}
 	}
-	//for _, seq := range seqs {
-	//	p, err := chain.QueryPacket(int64(sh.GetQueryableHeight(chain.ChainID())), seq)
-	//	if err != nil {
-	//		log.Println("failed to QueryPacket:", int64(sh.GetQueryableHeight(chain.ChainID())), seq, err)
-	//		return nil, err
-	//	}
-	//	provableHeight := sh.GetProvableHeight(chain.ChainID())
-	//	res, err := chain.QueryPacketCommitmentWithProof(provableHeight, seq)
-	//	if err != nil {
-	//		log.Println("failed to QueryPacketCommitment:", provableHeight, seq, err)
-	//		return nil, err
-	//	}
-	//	msg := chantypes.NewMsgRecvPacket(*p, res.Proof, res.ProofHeight, sender.String())
-	//	msgs = append(msgs, msg)
-	//}
 	return msgs, nil
 }
 
@@ -480,11 +465,11 @@ func (st NaiveStrategy) RelayAcknowledgements(src, dst *ProvableChain, sp *Relay
 
 	// set the maximum relay transaction constraints
 	msgs := &RelayMsgs{
-		Src:          []sdk.Msg{},
-		Dst:          []sdk.Msg{},
-		MaxTxSize:    st.MaxTxSize,
-		MaxMsgLength: st.MaxMsgLength,
-		//MaxMsgLength: MaxMsgLength,
+		Src:       []sdk.Msg{},
+		Dst:       []sdk.Msg{},
+		MaxTxSize: st.MaxTxSize,
+		//MaxMsgLength: st.MaxMsgLength,
+		MaxMsgLength: MaxMsgLength,
 	}
 
 	addr, err := dst.GetAddress()

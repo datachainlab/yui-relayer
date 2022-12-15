@@ -437,7 +437,7 @@ func rcvPacketQueries(channelID string, seqs []uint64) string {
 	}
 	query := strings.Join(queries, " OR ")
 	condChannel := fmt.Sprintf("%s.packet_src_channel='%s'", spTag, channelID)
-	return fmt.Sprintf("%s AND ( %s )", condChannel, query)
+	return fmt.Sprintf("%s AND %s ", condChannel, query)
 
 }
 
