@@ -149,6 +149,8 @@ func GetPacketAcknowledgementsFromEvents(events []abci.Event) ([]packetAcknowled
 }
 
 func FindPacketAcknowledgementFromEventsBySequence(events []abci.Event, seq uint64) (*packetAcknowledgement, error) {
+	defer utils.Track(time.Now(), "FindPacketAcknowledgementFromEventsBySequence()", nil)
+
 	acks, err := GetPacketAcknowledgementsFromEvents(events)
 	if err != nil {
 		return nil, err

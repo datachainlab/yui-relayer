@@ -101,7 +101,8 @@ sum-acks:
 	./scripts/sum $(NAME) syncHeaders.GetProvableHeight
 	./scripts/sum $(NAME) tendermint.QueryTxs
 	./scripts/sum $(NAME) Client.TxSearch
-	./scripts/sum $(NAME) tendermint.QueryPacket
+	./scripts/sum $(NAME) FindPacketAcknowledgementFromEventsBySequence
+	./scripts/sum $(NAME) "tendermint.QueryPacket()"
 	./scripts/sum $(NAME) tendermint.QueryPacketAcknowledgement
 	./scripts/sum $(NAME) FindPacketFromEventsBySequence
 	./scripts/sum $(NAME) UnrelayedAcknowledgements

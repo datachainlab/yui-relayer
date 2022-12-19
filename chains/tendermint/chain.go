@@ -79,7 +79,16 @@ func (c *Chain) Codec() codec.ProtoCodecMarshaler {
 
 // GetAddress returns the sdk.AccAddress associated with the configred key
 func (c *Chain) GetAddress() (sdk.AccAddress, error) {
+	//caller := ""
+	//pc, _, _, ok := runtime.Caller(3)
+	//details := runtime.FuncForPC(pc)
+	//if ok && details != nil {
+	//	caller = details.Name()
+	//}
+	//logData := map[string]string{"callerFunc": caller}
+	//defer utils.Track(time.Now(), "tendermint.GetAddress()", logData)
 	defer utils.Track(time.Now(), "tendermint.GetAddress()", nil)
+
 	defer c.UseSDKContext()()
 	if c.address != nil {
 		return c.address, nil

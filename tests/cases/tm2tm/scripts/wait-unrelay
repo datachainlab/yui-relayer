@@ -18,7 +18,7 @@ fi
 
 echo $cmd
 
-for (( i=1; i<=20; i++ ))
+for (( i=1; i<=200; i++ ))
 do
   json=$(${RLY} query ${cmd} ibc01)
   count=0
@@ -33,7 +33,7 @@ do
   if [ $count -eq $expectedCount ]; then
     exit 0
   fi
-  sleep 5
+  sleep 0.5
 done
 exit 1
 

@@ -3,10 +3,12 @@ package cmd
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/cosmos/cosmos-sdk/client/flags"
 	"github.com/hyperledger-labs/yui-relayer/config"
 	"github.com/hyperledger-labs/yui-relayer/core"
+	"github.com/hyperledger-labs/yui-relayer/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -162,6 +164,8 @@ func relayMsgsCmd(ctx *config.Context) *cobra.Command {
 		Short: "relay any packets that remain to be relayed on a given path, in both directions",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			defer utils.Track(time.Now(), "relay command", nil)
+
 			c, src, dst, err := ctx.Config.ChainsFromPath(args[0])
 			if err != nil {
 				return err
@@ -206,6 +210,7 @@ func relayAcksCmd(ctx *config.Context) *cobra.Command {
 		Short:   "relay any acknowledgements that remain to be relayed on a given path, in both directions",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			defer utils.Track(time.Now(), "relay acks command", nil)
 			c, src, dst, err := ctx.Config.ChainsFromPath(args[0])
 			if err != nil {
 				return err

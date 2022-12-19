@@ -78,14 +78,20 @@ tx-acks:
 # e.g. make scenario COUNT=100 NAME=tx-100
 .PHONY: scenario
 scenario: clean
+	date +%s
 	#make -C tests/cases/tm2tm scenario
 	make transfer COUNT=$(COUNT)
 	# wait unrelay
+	date +%s
 	make -C tests/cases/tm2tm wait-unrelay MODE=unrelay TARGET=src COUNT=$(COUNT)
+	date +%s
 	make -C tests/cases/tm2tm tx-relay NAME=$(NAME)
 	# wait unrelay-akcs
+	date +%s
 	make -C tests/cases/tm2tm wait-unrelay MODE=acks TARGET=dst COUNT=$(COUNT)
+	date +%s
 	make -C tests/cases/tm2tm tx-acks NAME=$(NAME)
+	date +%s
 
 .PHONY: scenario-all
 scenario-all: clean
