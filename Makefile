@@ -74,7 +74,9 @@ tx-acks:
 	make -C tests/cases/tm2tm tx-acks PARAM=name
 
 
+#------------------------------------------------------------------------------
 # scenario
+#------------------------------------------------------------------------------
 # e.g. make scenario COUNT=100 NAME=tx-100
 .PHONY: scenario
 scenario: clean
@@ -121,13 +123,44 @@ scenario-service:
 scenario-service-transfer:
 	make -C tests/cases/tm2tm loop-transfer MSG=$(MSG) INTERVAL=$(INTERVAL)
 
-
+#------------------------------------------------------------------------------
+# tally log
+#------------------------------------------------------------------------------
 # e.g. make tally-log RELAY=relay-tx-100.log ACKS=acks-tx-100.log
+.PHONY: tally-log
 tally-log:
 	make -C tests/cases/tm2tm sum-relay NAME=$(RELAY)
 	make -C tests/cases/tm2tm sum-acks NAME=$(ACKS)
 
+# e.g. make tally-relay-log RELAY=relay-tx-100.log
+.PHONY: tally-relay-log
+tally-relay-log:
+	make -C tests/cases/tm2tm sum-relay NAME=$(RELAY)
+
+# e.g. make tally-acks-log ACKS=acks-tx-100.log
+.PHONY: tally-acks-log
+tally-acks-log:
+	make -C tests/cases/tm2tm sum-acks NAME=$(ACKS)
+
+# e.g. make tally-all-log RELAY=relay-tx-100.log ACKS=acks-tx-100.log
+.PHONY: tally-all-log
+tally-all-log:
+	make -C tests/cases/tm2tm sum-all-relay NAME=$(RELAY)
+	make -C tests/cases/tm2tm sum-all-acks NAME=$(ACKS)
+
+# e.g. make tally-relay-all-log RELAY=relay-tx-100.log
+.PHONY: tally-relay-all-log
+tally-relay-all-log:
+	make -C tests/cases/tm2tm sum-all-relay NAME=$(RELAY)
+
+# e.g. make tally-acks-all-log ACKS=acks-tx-100.log
+.PHONY: tally-acks-all-log
+tally-acks-all-log:
+	make -C tests/cases/tm2tm sum-all-acks NAME=$(ACKS)
+
+#------------------------------------------------------------------------------
 # utils
+#------------------------------------------------------------------------------
 .PHONY: query-unrelay
 query-unrelay:
 	make -C tests/cases/tm2tm query-unrelay

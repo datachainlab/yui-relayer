@@ -78,34 +78,50 @@ wait-unrelay:
 # e.g. make sum-relay NAME=relay-tx-100.log
 .PHONY: sum-relay
 sum-relay:
-	#./scripts/sum relay-tx-100.log RelayPackets
-	#./scripts/sum relay-tx-100.log Prover.relayPackets
-	./scripts/sum $(NAME) RelayMsgs.Send
-	./scripts/sum $(NAME) syncHeaders.GetHeader
-	./scripts/sum $(NAME) tendermint.GetAddress
-	./scripts/sum $(NAME) tendermint.QueryPacket
-	./scripts/sum $(NAME) syncHeaders.GetProvableHeight
-	./scripts/sum $(NAME) Prover.QueryPacketCommitmentWithProof
-	./scripts/sum $(NAME) tendermint.QueryTxs
-	./scripts/sum $(NAME) FindPacketFromEventsBySequence
-	./scripts/sum $(NAME) Client.TxSearch
+	./scripts/sum $(NAME) "relayMsgsCmd()"
+	./scripts/sum $(NAME) "SetupRelay()"
+	./scripts/sum $(NAME) "UnrelayedSequences()"
+	./scripts/sum $(NAME) "RelayPackets()"
+	./scripts/sum $(NAME) "Prover.relayPackets()"
+	./scripts/sum $(NAME) "tendermint.QueryPacket()"
+	./scripts/sum $(NAME) "tendermint.QueryTxs()"
+	./scripts/sum $(NAME) "Client.TxSearch()"
+	./scripts/sum $(NAME) "FindPacketFromEventsBySequence()"
+	./scripts/sum $(NAME) "syncHeaders.GetProvableHeight()"
+	./scripts/sum $(NAME) "Prover.QueryPacketCommitmentWithProof()"
+	./scripts/sum $(NAME) "tendermint.queryPacketCommitment()"
+	./scripts/sum $(NAME) "tendermint.GetAddress()"
+	./scripts/sum $(NAME) "RelayMsgs.Send()"
+	./scripts/sum $(NAME) "syncHeaders.GetHeader()"
+
+# e.g. make sum-all-relay NAME=relay-tx-100.log
+.PHONY: sum-all-relay
+sum-all-relay:
+	./scripts/sum-all $(NAME) false
 
 # e.g. make sum-acks NAME=acks-tx-100.log
 .PHONY: sum-acks
 sum-acks:
-	./scripts/sum $(NAME) RelayAcknowledgements
-	./scripts/sum $(NAME) RelayMsgs.Send
-	./scripts/sum $(NAME) syncHeaders.GetHeader
-	./scripts/sum $(NAME) tendermint.GetAddress
-	./scripts/sum $(NAME) Prover.QueryPacketAcknowledgementCommitmentWithProof
-	./scripts/sum $(NAME) syncHeaders.GetProvableHeight
-	./scripts/sum $(NAME) tendermint.QueryTxs
-	./scripts/sum $(NAME) Client.TxSearch
-	./scripts/sum $(NAME) FindPacketAcknowledgementFromEventsBySequence
+	./scripts/sum $(NAME) "relayAcksCmd()"
+	./scripts/sum $(NAME) "UnrelayedAcknowledgements()"
+	./scripts/sum $(NAME) "RelayAcknowledgements()"
+	./scripts/sum $(NAME) "relayAcks() "
 	./scripts/sum $(NAME) "tendermint.QueryPacket()"
-	./scripts/sum $(NAME) tendermint.QueryPacketAcknowledgement
-	./scripts/sum $(NAME) FindPacketFromEventsBySequence
-	./scripts/sum $(NAME) UnrelayedAcknowledgements
+	./scripts/sum $(NAME) "tendermint.QueryTxs()"
+	./scripts/sum $(NAME) "Client.TxSearch()"
+	./scripts/sum $(NAME) "tendermint.QueryPacketAcknowledgement()"
+	./scripts/sum $(NAME) "FindPacketAcknowledgementFromEventsBySequence()"
+	./scripts/sum $(NAME) "syncHeaders.GetProvableHeight()"
+	./scripts/sum $(NAME) "Prover.QueryPacketAcknowledgementCommitmentWithProof()"
+	./scripts/sum $(NAME) "queryPacketAcknowledgementCommitment()"
+	./scripts/sum $(NAME) "tendermint.GetAddress()"
+	./scripts/sum $(NAME) "RelayMsgs.Send()"
+	./scripts/sum $(NAME) "syncHeaders.GetHeader()"
+
+# e.g. make sum-all-relay NAME=acks-tx-100.log
+.PHONY: sum-all-acks
+sum-all-acks:
+	./scripts/sum-all $(NAME) true
 
 .PHONY: clean
 clean:

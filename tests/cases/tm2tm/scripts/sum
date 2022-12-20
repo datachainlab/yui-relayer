@@ -9,13 +9,25 @@ targetLine=$(cat ${LOG_DIR}/${fileName} | grep ${funcName})
 
 unit=""
 sum=0
+sumMS=0
+sumMicroS=0
 count=0
 for v in ${targetLine}
 do
   elapsed=$(echo $v | jq -r '.elapsed')
+  elapsedMS=$(echo $v | jq -r '.elapsed_ms')
+  elapsedMicroS=$(echo $v | jq -r '.elapsed_us')
+
   unit=${elapsed: -2:2}
   num=$(echo $elapsed | tr -d $unit)
   sum=$(echo "scale=5; $sum + $num" | bc)
+  # ms
+  num=$(echo $elapsedMS)
+  sumMS=$(echo "scale=5; $sumMS + $num" | bc)
+  # μs
+  num=$(echo $elapsedMicroS)
+  sumMicroS=$(echo "scale=5; $sumMicroS + $num" | bc)
+
   count=$(( count + 1 ))
 done
-echo "$sum$unit , count: $count"
+echo "$sum$unit , ${sumMS}ms, ${sumMicroS}μs ,count: $count"

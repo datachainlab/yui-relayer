@@ -164,7 +164,7 @@ func relayMsgsCmd(ctx *config.Context) *cobra.Command {
 		Short: "relay any packets that remain to be relayed on a given path, in both directions",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			defer utils.Track(time.Now(), "relay command", nil)
+			defer utils.Track(time.Now(), "relayMsgsCmd()", nil)
 
 			c, src, dst, err := ctx.Config.ChainsFromPath(args[0])
 			if err != nil {
@@ -210,7 +210,7 @@ func relayAcksCmd(ctx *config.Context) *cobra.Command {
 		Short:   "relay any acknowledgements that remain to be relayed on a given path, in both directions",
 		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			defer utils.Track(time.Now(), "relay acks command", nil)
+			defer utils.Track(time.Now(), "relayAcksCmd()", nil)
 			c, src, dst, err := ctx.Config.ChainsFromPath(args[0])
 			if err != nil {
 				return err

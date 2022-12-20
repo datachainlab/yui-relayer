@@ -156,7 +156,9 @@ func (c *Chain) QueryPacketCommitment(
 
 func (c *Chain) queryPacketCommitment(
 	height int64, seq uint64, prove bool) (comRes *chantypes.QueryPacketCommitmentResponse, err error) {
-	return chanutils.QueryPacketCommitment(c.CLIContext(height), c.PathEnd.PortID, c.PathEnd.ChannelID, seq, prove)
+	ctx := c.CLIContext(height)
+	defer utils.Track(time.Now(), "tendermint.queryPacketCommitment()", nil)
+	return chanutils.QueryPacketCommitment(ctx, c.PathEnd.PortID, c.PathEnd.ChannelID, seq, prove)
 }
 
 // QueryPacketAcknowledgementCommitment returns the packet ack proof at a given height
@@ -165,7 +167,9 @@ func (c *Chain) QueryPacketAcknowledgementCommitment(height int64, seq uint64) (
 }
 
 func (c *Chain) queryPacketAcknowledgementCommitment(height int64, seq uint64, prove bool) (ackRes *chantypes.QueryPacketAcknowledgementResponse, err error) {
-	return chanutils.QueryPacketAcknowledgement(c.CLIContext(height), c.PathEnd.PortID, c.PathEnd.ChannelID, seq, prove)
+	ctx := c.CLIContext(height)
+	defer utils.Track(time.Now(), "tendermint.queryPacketAcknowledgementCommitment()", nil)
+	return chanutils.QueryPacketAcknowledgement(ctx, c.PathEnd.PortID, c.PathEnd.ChannelID, seq, prove)
 }
 
 func (dst *Chain) QueryPacketAcknowledgement(height int64, sequence uint64) ([]byte, error) {

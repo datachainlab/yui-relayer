@@ -12,7 +12,12 @@ import (
 // ```
 func Track(start time.Time, funcName string, kvs map[string]string) {
 	elapsed := time.Since(start)
-	baseLog := log.Info().Str("func", funcName).Str("elapsed", elapsed.String())
+	elapsedMS := elapsed.Milliseconds()
+	elapsedMicroS := elapsed.Microseconds()
+	//baseLog := log.Info().Str("func", funcName).Str("elapsed", elapsed.String())
+	// Note: `μ` of elapsed_μs can not be used in jq command or json
+	baseLog := log.Info().Str("func", funcName).Str("elapsed", elapsed.String()).Int64("elapsed_ms", elapsedMS).Int64("elapsed_us", elapsedMicroS)
+
 	for k, v := range kvs {
 		baseLog = baseLog.Str(k, v)
 	}
@@ -20,7 +25,11 @@ func Track(start time.Time, funcName string, kvs map[string]string) {
 }
 
 func TrackLog(elapsed time.Duration, funcName string, kvs map[string]string) {
-	baseLog := log.Info().Str("func", funcName).Str("elapsed", elapsed.String())
+	//elapsed := time.Since(start)
+	elapsedMS := elapsed.Milliseconds()
+	elapsedMicroS := elapsed.Microseconds()
+	//baseLog := log.Info().Str("func", funcName).Str("elapsed", elapsed.String())
+	baseLog := log.Info().Str("func", funcName).Str("elapsed", elapsed.String()).Int64("elapsed_ms", elapsedMS).Int64("elapsed_us", elapsedMicroS)
 	for k, v := range kvs {
 		baseLog = baseLog.Str(k, v)
 	}

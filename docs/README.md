@@ -16,6 +16,9 @@ make scenario COUNT=100 NAME=tx-100
 
 # Tally log file
 make tally-log RELAY=relay-tx-100.log ACKS=acks-tx-100.log
+
+# Tally log file for query/tx/internal cost
+make tally-all-log RELAY=relay-tx-100.log ACKS=acks-tx-100.log
 ```
 
 ## Load Test using service

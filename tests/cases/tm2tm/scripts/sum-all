@@ -1,0 +1,70 @@
+#!/bin/bash
+
+LOG_DIR=$(cd $(dirname $0); pwd)/..
+
+fileName=$1
+isAck=$2
+
+# 1. get total cost
+funcName=relayMsgsCmd
+if [ $isAck == "true" ];then
+  funcName=relayAcksCmd
+fi
+
+targetLine=$(cat ${LOG_DIR}/${fileName} | grep ${funcName})
+elapsed=$(echo $targetLine | jq -r '.elapsed_us')
+totalCost=$(echo "scale=5; $elapsed" | bc)
+echo "totalCost: ${totalCost}us"
+totalCostS=$(echo "scale=5; ${totalCost} / 1000000" | bc)
+echo "  ${totalCostS}s"
+
+# 2. tx func
+targetLine=$(cat ${LOG_DIR}/${fileName} | grep RelayMsgs.Send)
+elapsed=$(echo $targetLine | jq -r '.elapsed_us')
+txCost=$(echo "scale=5; $elapsed" | bc)
+echo "txCost: ${txCost}us"
+txCostMS=$(echo "scale=5; ${txCost} / 1000" | bc)
+echo "  ${txCostMS}ms"
+
+# 3. query func "Client.TxSearch"
+targetLine=$(cat ${LOG_DIR}/${fileName} | grep Client.TxSearch)
+sum=0
+for v in ${targetLine}
+do
+  elapsed=$(echo $v | jq -r '.elapsed_us')
+  sum=$(echo "scale=5; $sum + $elapsed" | bc)
+done
+#echo "Client.TxSearch: ${sum}us"
+
+# 4. query func "tendermint.queryPacketCommitment"
+funcName=tendermint.queryPacketCommitment
+if [ $isAck == "true" ];then
+  funcName=queryPacketAcknowledgementCommitment
+fi
+
+targetLine=$(cat ${LOG_DIR}/${fileName} | grep ${funcName})
+sum2=0
+for v in ${targetLine}
+do
+  elapsed=$(echo $v | jq -r '.elapsed_us')
+  sum2=$(echo "scale=5; $sum2 + $elapsed" | bc)
+done
+#echo "tendermint.queryPacketCommitment: ${sum2}us"
+
+# 5. query func "syncHeaders.GetHeader"
+targetLine=$(cat ${LOG_DIR}/${fileName} | grep syncHeaders.GetHeader)
+elapsed=$(echo $targetLine | jq -r '.elapsed_us')
+sum3=$(echo "scale=5; $elapsed" | bc)
+
+
+# 6. query cost
+queryCost=$(echo "scale=5; $sum + $sum2 + $sum3" | bc)
+echo "queryCost: ${queryCost}us"
+queryCostMS=$(echo "scale=5; ${queryCost} / 1000" | bc)
+echo "  ${queryCostMS}ms"
+
+# 7. internal cost
+internalCost=$(echo "scale=5; $totalCost - $txCost - $queryCost" | bc)
+echo "internalCost: ${internalCost}us"
+internalCostMS=$(echo "scale=5; ${internalCost} / 1000" | bc)
+echo "  ${internalCostMS}ms"
