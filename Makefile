@@ -156,7 +156,7 @@ tally-scenario-log:
 	make tally-log RELAY=relay-tx-80.log ACKS=acks-tx-80.log
 	make tally-log RELAY=relay-tx-90.log ACKS=acks-tx-90.log
 	make tally-log RELAY=relay-tx-100.log ACKS=acks-tx-100.log
-	make tally-log RELAY=relay-tx-100.log ACKS=acks-tx-100.log
+	make tally-log RELAY=relay-tx-200.log ACKS=acks-tx-200.log
 
 
 # e.g. make tally-all-log RELAY=relay-tx-100.log ACKS=acks-tx-100.log
