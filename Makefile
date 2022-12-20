@@ -79,7 +79,7 @@ tx-acks:
 #------------------------------------------------------------------------------
 # e.g. make scenario COUNT=100 NAME=tx-100
 .PHONY: scenario
-scenario: clean
+scenario:
 	date +%s
 	#make -C tests/cases/tm2tm scenario
 	make transfer COUNT=$(COUNT)
@@ -109,10 +109,11 @@ scenario-all: clean
 	make scenario COUNT=80 NAME=tx-80
 	make scenario COUNT=90 NAME=tx-90
 	make scenario COUNT=100 NAME=tx-100
+	sleep 3
 	make scenario COUNT=200 NAME=tx-200
-	make scenario COUNT=300 NAME=tx-300
-	make scenario COUNT=400 NAME=tx-400
-	make scenario COUNT=500 NAME=tx-500
+	#make scenario COUNT=300 NAME=tx-300
+	#make scenario COUNT=400 NAME=tx-400
+	#make scenario COUNT=500 NAME=tx-500
 
 .PHONY: scenario-service
 scenario-service:
@@ -142,6 +143,22 @@ tally-relay-log:
 tally-acks-log:
 	make -C tests/cases/tm2tm sum-acks NAME=$(ACKS)
 
+.PHONY: tally-scenario-log
+tally-scenario-log:
+	make tally-log RELAY=relay-tx-1.log ACKS=acks-tx-1.log
+	make tally-log RELAY=relay-tx-10.log ACKS=acks-tx-10.log
+	make tally-log RELAY=relay-tx-20.log ACKS=acks-tx-20.log
+	make tally-log RELAY=relay-tx-30.log ACKS=acks-tx-30.log
+	make tally-log RELAY=relay-tx-40.log ACKS=acks-tx-40.log
+	make tally-log RELAY=relay-tx-50.log ACKS=acks-tx-50.log
+	make tally-log RELAY=relay-tx-60.log ACKS=acks-tx-60.log
+	make tally-log RELAY=relay-tx-70.log ACKS=acks-tx-70.log
+	make tally-log RELAY=relay-tx-80.log ACKS=acks-tx-80.log
+	make tally-log RELAY=relay-tx-90.log ACKS=acks-tx-90.log
+	make tally-log RELAY=relay-tx-100.log ACKS=acks-tx-100.log
+	make tally-log RELAY=relay-tx-100.log ACKS=acks-tx-100.log
+
+
 # e.g. make tally-all-log RELAY=relay-tx-100.log ACKS=acks-tx-100.log
 .PHONY: tally-all-log
 tally-all-log:
@@ -157,6 +174,21 @@ tally-relay-all-log:
 .PHONY: tally-acks-all-log
 tally-acks-all-log:
 	make -C tests/cases/tm2tm sum-all-acks NAME=$(ACKS)
+
+.PHONY: tally-scenario-all-log
+tally-scenario-all-log:
+	make tally-all-log RELAY=relay-tx-1.log ACKS=acks-tx-1.log
+	make tally-all-log RELAY=relay-tx-10.log ACKS=acks-tx-10.log
+	make tally-all-log RELAY=relay-tx-20.log ACKS=acks-tx-20.log
+	make tally-all-log RELAY=relay-tx-30.log ACKS=acks-tx-30.log
+	make tally-all-log RELAY=relay-tx-40.log ACKS=acks-tx-40.log
+	make tally-all-log RELAY=relay-tx-50.log ACKS=acks-tx-50.log
+	make tally-all-log RELAY=relay-tx-60.log ACKS=acks-tx-60.log
+	make tally-all-log RELAY=relay-tx-70.log ACKS=acks-tx-70.log
+	make tally-all-log RELAY=relay-tx-80.log ACKS=acks-tx-80.log
+	make tally-all-log RELAY=relay-tx-90.log ACKS=acks-tx-90.log
+	make tally-all-log RELAY=relay-tx-100.log ACKS=acks-tx-100.log
+	make tally-all-log RELAY=relay-tx-200.log ACKS=acks-tx-200.log
 
 #------------------------------------------------------------------------------
 # utils
