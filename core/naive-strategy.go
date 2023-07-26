@@ -2,12 +2,14 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	retry "github.com/avast/retry-go"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	chantypes "github.com/cosmos/ibc-go/v7/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v7/modules/core/24-host"
+	"github.com/hyperledger-labs/yui-relayer/logger"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -30,16 +32,32 @@ func (st NaiveStrategy) GetType() string {
 }
 
 func (st NaiveStrategy) SetupRelay(ctx context.Context, src, dst *ProvableChain) error {
+	zapLogger := logger.GetLogger()
+	defer zapLogger.Zap.Sync()
 	if err := src.SetupForRelay(ctx); err != nil {
+		naiveErrorwChannel(
+			zapLogger,
+			"failed to setup for src",
+			src, dst,
+			err,
+		)
 		return err
 	}
 	if err := dst.SetupForRelay(ctx); err != nil {
+		naiveErrorwChannel(
+			zapLogger,
+			"failed to setup for dst",
+			src, dst,
+			err,
+		)
 		return err
 	}
 	return nil
 }
 
 func (st NaiveStrategy) UnrelayedPackets(src, dst *ProvableChain, sh SyncHeaders) (*RelayPackets, error) {
+	zapLogger := logger.GetLogger()
+	defer zapLogger.Zap.Sync()
 	var (
 		eg         = new(errgroup.Group)
 		srcPackets PacketInfoList
@@ -80,12 +98,24 @@ func (st NaiveStrategy) UnrelayedPackets(src, dst *ProvableChain, sh SyncHeaders
 	})
 
 	if err := eg.Wait(); err != nil {
+		naiveErrorwChannel(
+			zapLogger,
+			"error querying packet commitments",
+			src, dst,
+			err,
+		)
 		return nil, err
 	}
 
 	eg.Go(func() error {
 		seqs, err := dst.QueryUnreceivedPackets(dstLatestCtx, srcPackets.ExtractSequenceList())
 		if err != nil {
+			naiveErrorwChannel(
+				zapLogger,
+				"error querying unrelayed packets",
+				src, dst,
+				err,
+			)
 			return err
 		}
 		srcPackets = srcPackets.Filter(seqs)
@@ -95,6 +125,12 @@ func (st NaiveStrategy) UnrelayedPackets(src, dst *ProvableChain, sh SyncHeaders
 	eg.Go(func() error {
 		seqs, err := src.QueryUnreceivedPackets(srcLatestCtx, dstPackets.ExtractSequenceList())
 		if err != nil {
+			naiveErrorwChannel(
+				zapLogger,
+				"error querying unrelayed packets",
+				src, dst,
+				err,
+			)
 			return err
 		}
 		dstPackets = dstPackets.Filter(seqs)
@@ -102,6 +138,12 @@ func (st NaiveStrategy) UnrelayedPackets(src, dst *ProvableChain, sh SyncHeaders
 	})
 
 	if err := eg.Wait(); err != nil {
+		naiveErrorwChannel(
+			zapLogger,
+			"error querying unrelayed packets",
+			src, dst,
+			err,
+		)
 		return nil, err
 	}
 
@@ -112,6 +154,8 @@ func (st NaiveStrategy) UnrelayedPackets(src, dst *ProvableChain, sh SyncHeaders
 }
 
 func (st NaiveStrategy) RelayPackets(src, dst *ProvableChain, sp *RelayPackets, sh SyncHeaders) error {
+	zapLogger := logger.GetLogger()
+	defer zapLogger.Zap.Sync()
 	// set the maximum relay transaction constraints
 	msgs := &RelayMsgs{
 		Src:          []sdk.Msg{},
@@ -124,16 +168,34 @@ func (st NaiveStrategy) RelayPackets(src, dst *ProvableChain, sp *RelayPackets, 
 	dstCtx := sh.GetQueryContext(dst.ChainID())
 	srcAddress, err := src.GetAddress()
 	if err != nil {
+		naiveErrorwChannel(
+			zapLogger,
+			"error getting address",
+			src, dst,
+			err,
+		)
 		return err
 	}
 	dstAddress, err := dst.GetAddress()
 	if err != nil {
+		naiveErrorwChannel(
+			zapLogger,
+			"error getting address",
+			src, dst,
+			err,
+		)
 		return err
 	}
 
 	if len(sp.Src) > 0 {
 		hs, err := sh.SetupHeadersForUpdate(src, dst)
 		if err != nil {
+			naiveErrorwChannel(
+				zapLogger,
+				"error setting up headers for update",
+				src, dst,
+				err,
+			)
 			return err
 		}
 		if len(hs) > 0 {
@@ -144,6 +206,12 @@ func (st NaiveStrategy) RelayPackets(src, dst *ProvableChain, sp *RelayPackets, 
 	if len(sp.Dst) > 0 {
 		hs, err := sh.SetupHeadersForUpdate(dst, src)
 		if err != nil {
+			naiveErrorwChannel(
+				zapLogger,
+				"error setting up headers for update",
+				src, dst,
+				err,
+			)
 			return err
 		}
 		if len(hs) > 0 {
@@ -153,16 +221,32 @@ func (st NaiveStrategy) RelayPackets(src, dst *ProvableChain, sp *RelayPackets, 
 
 	packetsForDst, err := collectPackets(srcCtx, src, sp.Src, dstAddress)
 	if err != nil {
+		naiveErrorwChannel(
+			zapLogger,
+			"error collecting packets",
+			src, dst,
+			err,
+		)
 		return err
 	}
 	packetsForSrc, err := collectPackets(dstCtx, dst, sp.Dst, srcAddress)
 	if err != nil {
+		naiveErrorwChannel(
+			zapLogger,
+			"error collecting packets",
+			src, dst,
+			err,
+		)
 		return err
 	}
 
 	if len(packetsForDst) == 0 && len(packetsForSrc) == 0 {
-		log.Printf("- No packets to relay between [%s]port{%s} and [%s]port{%s}",
-			src.ChainID(), src.Path().PortID, dst.ChainID(), dst.Path().PortID)
+		naiveInfowChannel(
+			zapLogger,
+			"no packates to relay",
+			src, dst,
+			"",
+		)
 		return nil
 	}
 
@@ -183,6 +267,8 @@ func (st NaiveStrategy) RelayPackets(src, dst *ProvableChain, sp *RelayPackets, 
 }
 
 func (st NaiveStrategy) UnrelayedAcknowledgements(src, dst *ProvableChain, sh SyncHeaders) (*RelayPackets, error) {
+	zapLogger := logger.GetLogger()
+	defer zapLogger.Zap.Sync()
 	var (
 		eg      = new(errgroup.Group)
 		srcAcks PacketInfoList
@@ -208,7 +294,12 @@ func (st NaiveStrategy) UnrelayedAcknowledgements(src, dst *ProvableChain, sh Sy
 			srcAcks, err = src.QueryUnfinalizedRelayAcknowledgements(srcCtx, dst)
 			return err
 		}, rtyAtt, rtyDel, rtyErr, retry.OnRetry(func(n uint, err error) {
-			log.Printf("- [%s]@{%d} - try(%d/%d) query packet acknowledgements: %s", src.ChainID(), srcCtx.Height().GetRevisionHeight(), n+1, rtyAttNum, err)
+			naiveInfowChannel(
+				zapLogger,
+				"query packet acknowledgements",
+				src, dst,
+				fmt.Sprintf("- [%s]@{%d} - try(%d/%d) query packet acknowledgements [Error: %s]", src.ChainID(), srcCtx.Height().GetRevisionHeight(), n+1, rtyAttNum, err.Error()),
+			)
 			sh.Updates(src, dst)
 		}))
 	})
@@ -219,18 +310,35 @@ func (st NaiveStrategy) UnrelayedAcknowledgements(src, dst *ProvableChain, sh Sy
 			dstAcks, err = dst.QueryUnfinalizedRelayAcknowledgements(dstCtx, src)
 			return err
 		}, rtyAtt, rtyDel, rtyErr, retry.OnRetry(func(n uint, err error) {
-			log.Printf("- [%s]@{%d} - try(%d/%d) query packet acknowledgements: %s", dst.ChainID(), dstCtx.Height().GetRevisionHeight(), n+1, rtyAttNum, err)
+			naiveInfowChannel(
+				zapLogger,
+				"query packet acknowledgements",
+				src, dst,
+				fmt.Sprintf("- [%s]@{%d} - try(%d/%d) query packet acknowledgements [Error: %s]", dst.ChainID(), dstCtx.Height().GetRevisionHeight(), n+1, rtyAttNum, err.Error()),
+			)
 			sh.Updates(src, dst)
 		}))
 	})
 
 	if err := eg.Wait(); err != nil {
+		naiveErrorwChannel(
+			zapLogger,
+			"error querying packet commitments",
+			src, dst,
+			err,
+		)
 		return nil, err
 	}
 
 	eg.Go(func() error {
 		seqs, err := dst.QueryUnreceivedAcknowledgements(dstCtxLatest, srcAcks.ExtractSequenceList())
 		if err != nil {
+			naiveErrorwChannel(
+				zapLogger,
+				"error querying unrelayed acknowledgements",
+				src, dst,
+				err,
+			)
 			return err
 		}
 		srcAcks = srcAcks.Filter(seqs)
@@ -240,6 +348,12 @@ func (st NaiveStrategy) UnrelayedAcknowledgements(src, dst *ProvableChain, sh Sy
 	eg.Go(func() error {
 		seqs, err := src.QueryUnreceivedAcknowledgements(srcCtxLatest, dstAcks.ExtractSequenceList())
 		if err != nil {
+			naiveErrorwChannel(
+				zapLogger,
+				"error querying unrelayed acknowledgements",
+				src, dst,
+				err,
+			)
 			return err
 		}
 		dstAcks = dstAcks.Filter(seqs)
@@ -247,6 +361,12 @@ func (st NaiveStrategy) UnrelayedAcknowledgements(src, dst *ProvableChain, sh Sy
 	})
 
 	if err := eg.Wait(); err != nil {
+		naiveErrorwChannel(
+			zapLogger,
+			"error querying unrelayed acknowledgements",
+			src, dst,
+			err,
+		)
 		return nil, err
 	}
 
@@ -274,11 +394,19 @@ func collectPackets(ctx QueryContext, chain *ProvableChain, packets PacketInfoLi
 }
 
 func logPacketsRelayed(src, dst Chain, num int) {
-	log.Printf("★ Relayed %d packets: [%s]port{%s}->[%s]port{%s}",
-		num, dst.ChainID(), dst.Path().PortID, src.ChainID(), src.Path().PortID)
+	zapLogger := logger.GetLogger()
+	defer zapLogger.Zap.Sync()
+	zapLogger.InfowChannel(
+		fmt.Sprintf("★ Relayed %d packets", num),
+		src.ChainID(), src.Path().ChannelID, src.Path().PortID,
+		dst.ChainID(), dst.Path().ChannelID, dst.Path().PortID,
+		"",
+	)
 }
 
 func (st NaiveStrategy) RelayAcknowledgements(src, dst *ProvableChain, sp *RelayPackets, sh SyncHeaders) error {
+	zapLogger := logger.GetLogger()
+	defer zapLogger.Zap.Sync()
 	// set the maximum relay transaction constraints
 	msgs := &RelayMsgs{
 		Src:          []sdk.Msg{},
@@ -291,16 +419,34 @@ func (st NaiveStrategy) RelayAcknowledgements(src, dst *ProvableChain, sp *Relay
 	dstCtx := sh.GetQueryContext(dst.ChainID())
 	srcAddress, err := src.GetAddress()
 	if err != nil {
+		naiveErrorwChannel(
+			zapLogger,
+			"error getting address",
+			src, dst,
+			err,
+		)
 		return err
 	}
 	dstAddress, err := dst.GetAddress()
 	if err != nil {
+		naiveErrorwChannel(
+			zapLogger,
+			"error getting address",
+			src, dst,
+			err,
+		)
 		return err
 	}
 
 	if len(sp.Src) > 0 {
 		hs, err := sh.SetupHeadersForUpdate(src, dst)
 		if err != nil {
+			naiveErrorwChannel(
+				zapLogger,
+				"error setting up headers",
+				src, dst,
+				err,
+			)
 			return err
 		}
 		if len(hs) > 0 {
@@ -311,6 +457,12 @@ func (st NaiveStrategy) RelayAcknowledgements(src, dst *ProvableChain, sp *Relay
 	if len(sp.Dst) > 0 {
 		hs, err := sh.SetupHeadersForUpdate(dst, src)
 		if err != nil {
+			naiveErrorwChannel(
+				zapLogger,
+				"error setting up headers",
+				src, dst,
+				err,
+			)
 			return err
 		}
 		if len(hs) > 0 {
@@ -320,16 +472,32 @@ func (st NaiveStrategy) RelayAcknowledgements(src, dst *ProvableChain, sp *Relay
 
 	acksForDst, err := collectAcks(srcCtx, src, sp.Src, dstAddress)
 	if err != nil {
+		naiveErrorwChannel(
+			zapLogger,
+			"error querying unrelayed acknowledgements",
+			src, dst,
+			err,
+		)
 		return err
 	}
 	acksForSrc, err := collectAcks(dstCtx, dst, sp.Dst, srcAddress)
 	if err != nil {
+		naiveErrorwChannel(
+			zapLogger,
+			"error querying unrelayed acknowledgements",
+			src, dst,
+			err,
+		)
 		return err
 	}
 
 	if len(acksForDst) == 0 && len(acksForSrc) == 0 {
-		log.Printf("- No acknowledgements to relay between [%s]port{%s} and [%s]port{%s}",
-			src.ChainID(), src.Path().PortID, dst.ChainID(), dst.Path().PortID)
+		naiveInfowChannel(
+			zapLogger,
+			"no acknowledgements to relay",
+			src, dst,
+			"",
+		)
 		return nil
 	}
 
@@ -365,4 +533,22 @@ func collectAcks(ctx QueryContext, chain *ProvableChain, packets PacketInfoList,
 	}
 
 	return msgs, nil
+}
+
+func naiveErrorwChannel(zapLogger *logger.ZapLogger, msg string, src, dst *ProvableChain, err error) {
+	zapLogger.ErrorwChannel(msg,
+		src.ChainID(), src.Path().ChannelID, src.Path().PortID,
+		dst.ChainID(), dst.Path().ChannelID, dst.Path().PortID,
+		err,
+		"core.naive-strategy",
+	)
+}
+
+func naiveInfowChannel(zapLogger *logger.ZapLogger, msg string, src, dst *ProvableChain, info string) {
+	zapLogger.InfowChannel(
+		msg,
+		src.ChainID(), src.Path().ChannelID, src.Path().PortID,
+		dst.ChainID(), dst.Path().ChannelID, dst.Path().PortID,
+		info,
+	)
 }
