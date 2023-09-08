@@ -1,6 +1,8 @@
 package core
 
 import (
+	"log"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/hyperledger-labs/yui-relayer/logger"
 	"golang.org/x/sync/errgroup"
@@ -14,7 +16,9 @@ func CreateClients(src, dst *ProvableChain) error {
 		clients = &RelayMsgs{Src: []sdk.Msg{}, Dst: []sdk.Msg{}}
 	)
 
+	log.Println("> getHeadersForCreateClient()")
 	srcH, dstH, err := getHeadersForCreateClient(src, dst)
+	log.Println("< getHeadersForCreateClient()")
 	if err != nil {
 		clientErrorwChannel(
 			zapLogger,
@@ -25,7 +29,9 @@ func CreateClients(src, dst *ProvableChain) error {
 		return err
 	}
 
+	log.Println("> src.GetAddress()")
 	srcAddr, err := src.GetAddress()
+	log.Println("< src.GetAddress()")
 	if err != nil {
 		clientErrorwChannel(
 			zapLogger,
@@ -35,7 +41,9 @@ func CreateClients(src, dst *ProvableChain) error {
 		)
 		return err
 	}
+	log.Println("> dst.GetAddress()")
 	dstAddr, err := dst.GetAddress()
+	log.Println("< dst.GetAddress()")
 	if err != nil {
 		clientErrorwChannel(
 			zapLogger,
@@ -47,7 +55,9 @@ func CreateClients(src, dst *ProvableChain) error {
 	}
 
 	{
+		log.Println("> dst.CreateMsgCreateClient()")
 		msg, err := dst.CreateMsgCreateClient(src.Path().ClientID, dstH, srcAddr)
+		log.Println("< dst.CreateMsgCreateClient()")
 		if err != nil {
 			clientErrorwChannel(
 				zapLogger,
@@ -61,7 +71,9 @@ func CreateClients(src, dst *ProvableChain) error {
 	}
 
 	{
+		log.Println("> src.CreateMsgCreateClient()")
 		msg, err := src.CreateMsgCreateClient(dst.Path().ClientID, srcH, dstAddr)
+		log.Println("< src.CreateMsgCreateClient()")
 		if err != nil {
 			clientErrorwChannel(
 				zapLogger,
@@ -75,16 +87,22 @@ func CreateClients(src, dst *ProvableChain) error {
 	}
 
 	// Send msgs to both chains
+	log.Println("> clients.Ready()")
 	if clients.Ready() {
+		log.Println("< clients.Ready(); true")
 		// TODO: Add retry here for out of gas or other errors
+		log.Println("> clients.Send()")
 		if clients.Send(src, dst); clients.Success() {
+			log.Println("< clients.Send(); true")
 			clientInfowChannel(
 				zapLogger,
 				"★ Clients created",
 				src, dst,
 			)
 		}
+		log.Println("< clients.Send(); false")
 	}
+	log.Println("< clients.Ready(); false")
 	return nil
 }
 
@@ -138,11 +156,15 @@ func UpdateClients(src, dst *ProvableChain) error {
 func getHeadersForCreateClient(src, dst LightClient) (srch, dsth Header, err error) {
 	var eg = new(errgroup.Group)
 	eg.Go(func() error {
+		log.Println("> src.GetLatestFinalizedHeader()")
 		srch, err = src.GetLatestFinalizedHeader()
+		log.Println("< src.GetLatestFinalizedHeader()")
 		return err
 	})
 	eg.Go(func() error {
+		log.Println("> dst.GetLatestFinalizedHeader()")
 		dsth, err = dst.GetLatestFinalizedHeader()
+		log.Println("< dst.GetLatestFinalizedHeader()")
 		return err
 	})
 	if err := eg.Wait(); err != nil {
