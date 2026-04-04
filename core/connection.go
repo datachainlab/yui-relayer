@@ -481,6 +481,7 @@ func querySettledConnectionPair(
 	}
 
 	if srcConn.Connection.String() != srcLatestConn.Connection.String() {
+		logConnectionSettlementDiff(srcCtx.Context(), logger, "src", srcConn, srcLatestConn)
 		logger.DebugContext(srcCtx.Context(), "src connection end in transition",
 			"from", srcConn.Connection.String(),
 			"to", srcLatestConn.Connection.String(),
@@ -488,6 +489,7 @@ func querySettledConnectionPair(
 		return srcConn, dstConn, false, nil
 	}
 	if dstConn.Connection.String() != dstLatestConn.Connection.String() {
+		logConnectionSettlementDiff(dstCtx.Context(), logger, "dst", dstConn, dstLatestConn)
 		logger.DebugContext(dstCtx.Context(), "dst connection end in transition",
 			"from", dstConn.Connection.String(),
 			"to", dstLatestConn.Connection.String(),
@@ -495,6 +497,35 @@ func querySettledConnectionPair(
 		return srcConn, dstConn, false, nil
 	}
 	return srcConn, dstConn, true, nil
+}
+
+func logConnectionSettlementDiff(
+	ctx context.Context,
+	logger *log.RelayLogger,
+	side string,
+	finalized, latest *conntypes.QueryConnectionResponse,
+) {
+	logger.DebugContext(ctx, "connection settled diff",
+		"side", side,
+		slog.Group("finalized",
+			slog.Uint64("proof_height", mustGetHeight(finalized.ProofHeight)),
+			slog.String("state", finalized.Connection.State.String()),
+			slog.String("client_id", finalized.Connection.ClientId),
+			slog.String("counterparty_client_id", finalized.Connection.Counterparty.ClientId),
+			slog.String("counterparty_connection_id", finalized.Connection.Counterparty.ConnectionId),
+			slog.Any("versions", finalized.Connection.Versions),
+			slog.Uint64("delay_period", finalized.Connection.DelayPeriod),
+		),
+		slog.Group("latest",
+			slog.Uint64("proof_height", mustGetHeight(latest.ProofHeight)),
+			slog.String("state", latest.Connection.State.String()),
+			slog.String("client_id", latest.Connection.ClientId),
+			slog.String("counterparty_client_id", latest.Connection.Counterparty.ClientId),
+			slog.String("counterparty_connection_id", latest.Connection.Counterparty.ConnectionId),
+			slog.Any("versions", latest.Connection.Versions),
+			slog.Uint64("delay_period", latest.Connection.DelayPeriod),
+		),
+	)
 }
 
 func GetConnectionPairLogger(src, dst Chain) *log.RelayLogger {

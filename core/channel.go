@@ -372,6 +372,7 @@ func querySettledChannelPair(
 	}
 
 	if srcChan.Channel.String() != srcLatestChan.Channel.String() {
+		logChannelSettlementDiff(srcCtx.Context(), logger, "src", srcChan, srcLatestChan)
 		logger.DebugContext(srcCtx.Context(), "src channel end in transition",
 			"from", srcChan.Channel.String(),
 			"to", srcLatestChan.Channel.String(),
@@ -379,6 +380,7 @@ func querySettledChannelPair(
 		return srcChan, dstChan, false, nil
 	}
 	if dstChan.Channel.String() != dstLatestChan.Channel.String() {
+		logChannelSettlementDiff(dstCtx.Context(), logger, "dst", dstChan, dstLatestChan)
 		logger.DebugContext(dstCtx.Context(), "dst channel end in transition",
 			"from", dstChan.Channel.String(),
 			"to", dstLatestChan.Channel.String(),
@@ -386,6 +388,35 @@ func querySettledChannelPair(
 		return srcChan, dstChan, false, nil
 	}
 	return srcChan, dstChan, true, nil
+}
+
+func logChannelSettlementDiff(
+	ctx context.Context,
+	logger *log.RelayLogger,
+	side string,
+	finalized, latest *chantypes.QueryChannelResponse,
+) {
+	logger.DebugContext(ctx, "channel settled diff",
+		"side", side,
+		slog.Group("finalized",
+			slog.Uint64("proof_height", mustGetHeight(finalized.ProofHeight)),
+			slog.String("state", finalized.Channel.State.String()),
+			slog.String("ordering", finalized.Channel.Ordering.String()),
+			slog.String("counterparty_port_id", finalized.Channel.Counterparty.PortId),
+			slog.String("counterparty_channel_id", finalized.Channel.Counterparty.ChannelId),
+			slog.Any("connection_hops", finalized.Channel.ConnectionHops),
+			slog.String("version", finalized.Channel.Version),
+		),
+		slog.Group("latest",
+			slog.Uint64("proof_height", mustGetHeight(latest.ProofHeight)),
+			slog.String("state", latest.Channel.State.String()),
+			slog.String("ordering", latest.Channel.Ordering.String()),
+			slog.String("counterparty_port_id", latest.Channel.Counterparty.PortId),
+			slog.String("counterparty_channel_id", latest.Channel.Counterparty.ChannelId),
+			slog.Any("connection_hops", latest.Channel.ConnectionHops),
+			slog.String("version", latest.Channel.Version),
+		),
+	)
 }
 
 func GetChannelLogger(c Chain) *log.RelayLogger {
